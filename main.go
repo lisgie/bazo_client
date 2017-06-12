@@ -4,7 +4,7 @@ import (
 	"math/big"
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	"bc"
+	"github.com/lisgie/bazo_miner/bc"
 	"golang.org/x/crypto/sha3"
 	"net"
 	"bytes"
