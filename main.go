@@ -1,18 +1,18 @@
 package main
 
 import (
-	"math/big"
 	"crypto/ecdsa"
-	"crypto/elliptic"
-	"github.com/lisgie/bazo_miner/bc"
-	"golang.org/x/crypto/sha3"
+	"github.com/lisgie/bazo_miner/protocol"
+	"github.com/lisgie/bazo_miner/p2p"
+	"fmt"
 	"net"
+	"time"
+	"math/rand"
+	"math/big"
+	"crypto/elliptic"
 	"bytes"
 	"encoding/binary"
-	"bufio"
-	"math/rand"
-	"fmt"
-	"time"
+	"golang.org/x/crypto/sha3"
 )
 
 const(
@@ -28,102 +28,60 @@ const (
 	VERSION_ID = 1
 )
 
-var accA, accB bc.Account
+var accA, accB protocol.Account
 var PrivKeyA ecdsa.PrivateKey
 var RootPrivKey ecdsa.PrivateKey
 
 func main() {
-
 	prepAccs()
-	sendAccReq()
+
+	var conn net.Conn
+
+	conn,err := net.Dial("tcp", "127.0.0.1:8000")
+
+	if err != nil {
+		fmt.Printf("%v\n", err)
+		return
+	}
+
+	packet := p2p.BuildPacket(p2p.MINER_PING,nil)
+	conn.Write(packet)
+
+	buf := make([]byte, 4096)
+
+	_,err = conn.Read(buf)
+	if err != nil {
+		fmt.Printf("%v\n", err)
+		conn.Close()
+		return
+	}
+
+	//sending a fundstx broadcast
+	var txCnt uint32
+	rand := rand.New(rand.NewSource(time.Now().Unix()))
+	tx, _ := protocol.ConstrFundsTx(0x02,rand.Uint64()%100+1, rand.Uint64()%50+1, txCnt, accA.Hash(),accB.Hash(), &PrivKeyA)
+
+
+	time.Sleep(3*time.Second)
+	fmt.Printf("%v\n", tx)
+	packet = p2p.BuildPacket(p2p.FUNDSTX_BRDCST,tx.Encode())
+	conn.Write(packet)
+
+
+	conn.Close()
+
+
+
+
+	/*sendAccReq()
 	sendFundsTx()
 	sendAccTx()
 	sendAccTx()
 	sendAccTx()
 	sendAccTx()
 	time.Sleep(5*time.Second)
-	sendAccReq()
+	sendAccReq()*/
 }
-
-func sendAccReq() {
-	var conn net.Conn
-	conn, _ = net.Dial("tcp", "127.0.0.1:8081")
-	header := bc.ConstructHeader(len(accA.Hash),bc.ACC_REQ)
-	toSend := make([]byte, len(header)+len(accA.Hash))
-	copy(toSend[:bc.HEADER_LEN],header[:])
-	copy(toSend[bc.HEADER_LEN:],accA.Hash[:])
-
-	conn.Write(toSend)
-
-	reader := bufio.NewReader(conn)
-	recvHeader := bc.ExtractHeader(reader)
-
-	recvBuf := make([]byte, recvHeader.Len)
-	for i := 0; i < int(recvHeader.Len); i++ {
-		in,_ := reader.ReadByte()
-		recvBuf[i] = in
-	}
-
-	acc := bc.DecodeAcc(recvBuf)
-	fmt.Printf("%v\n", acc)
-	conn.Close()
-}
-
-func sendAccTx() {
-	var conn net.Conn
-	rand := rand.New(rand.NewSource(time.Now().Unix()))
-	conn, _ = net.Dial("tcp", "127.0.0.1:8081")
-	tx,_ := bc.ConstrAccTx(rand.Uint64()%100+1,&RootPrivKey)
-	accData := bc.EncodeAccTx(tx)
-	header := bc.ConstructHeader(len(accData),bc.ACCTX)
-
-	toSend := make([]byte, len(accData)+len(header))
-	copy(toSend[0:bc.HEADER_LEN],header[:])
-	copy(toSend[bc.HEADER_LEN:],accData[:])
-	conn.Write(toSend)
-
-	conn.Close()
-}
-
-func sendFundsTx() {
-	var conn net.Conn
-	var txCnt uint32
-	rand := rand.New(rand.NewSource(time.Now().Unix()))
-	conn, _ = net.Dial("tcp", "127.0.0.1:8081")
-	tx, _ := bc.ConstrFundsTx(0x02,rand.Uint64()%100+1, rand.Uint64()%50+1, txCnt, accA.Hash,accB.Hash, &PrivKeyA)
-	fundsData := bc.EncodeFundsTx(tx)
-	header := bc.ConstructHeader(len(fundsData),bc.FUNDSTX)
-
-	toSend := make([]byte, len(fundsData)+len(header))
-	copy(toSend[0:bc.HEADER_LEN],header[:])
-	copy(toSend[bc.HEADER_LEN:],fundsData[:])
-
-	conn.Write(toSend)
-	conn.Close()
-}
-
-func sendTimeReq() {
-	var conn net.Conn
-
-	conn, _ = net.Dial("tcp", "127.0.0.1:8081")
-
-	header := bc.ConstructHeader(0,bc.TIME_REQ)
-	toSend := make([]byte, bc.HEADER_LEN)
-	copy(toSend[:], header[:])
-	conn.Write(toSend)
-
-	reader := bufio.NewReader(conn)
-	recvHeader := bc.ExtractHeader(reader)
-
-	recvBuf := make([]byte, recvHeader.Len)
-	for i := 0; i < int(recvHeader.Len); i++ {
-		in,_ := reader.ReadByte()
-		recvBuf[i] = in
-	}
-
-	conn.Close()
-}
-
 
 func prepAccs() {
 
@@ -153,23 +111,24 @@ func prepAccs() {
 		privb,
 	}
 
-	accA = bc.Account{Balance: 15000}
+	accA = protocol.Account{Balance: 15000}
 	copy(accA.Address[0:32], PrivKeyA.PublicKey.X.Bytes())
 	copy(accA.Address[32:64], PrivKeyA.PublicKey.Y.Bytes())
-	accA.Hash = sha3.Sum256(accA.Address[:])
+	//accA.Hash = sha3.Sum256(accA.Address[:])
+
 
 	//This one is just for testing purposes
-	accB = bc.Account{Balance: 702}
+	accB = protocol.Account{Balance: 702}
 	copy(accB.Address[0:32], PrivKeyB.PublicKey.X.Bytes())
 	copy(accB.Address[32:64], PrivKeyB.PublicKey.Y.Bytes())
-	accB.Hash = sha3.Sum256(accB.Address[:])
+	//accB.Hash = sha3.Sum256(accB.Address[:])
 
 
 	var pubKey [64]byte
 
-	pub1,_ := new(big.Int).SetString(bc.RootPub1,16)
-	pub2,_ := new(big.Int).SetString(bc.RootPub2,16)
-	priv,_ := new(big.Int).SetString(bc.RootPriv,16)
+	pub1,_ := new(big.Int).SetString(protocol.RootPub1,16)
+	pub2,_ := new(big.Int).SetString(protocol.RootPub2,16)
+	priv,_ := new(big.Int).SetString(protocol.RootPriv,16)
 	PubKeyA = ecdsa.PublicKey{
 		elliptic.P256(),
 		pub1,
@@ -194,3 +153,85 @@ func prepAccs() {
 	copy(shortRootHash[:], rootHash[0:8])
 	//rootAcc := bc.Account{Hash:rootHash, Address:pubKey}
 }
+
+/*func sendAccReq() {
+	var conn net.Conn
+	conn, _ = net.Dial("tcp", "127.0.0.1:8081")
+	header := p2p.ConstructHeader(len(accA.Hash), protocol.ACC_REQ)
+	toSend := make([]byte, len(header)+len(accA.Hash))
+	copy(toSend[:p2p.HEADER_LEN],header[:])
+	copy(toSend[p2p.HEADER_LEN:],accA.Hash[:])
+
+	conn.Write(toSend)
+
+	reader := bufio.NewReader(conn)
+	recvHeader := protocol.ExtractHeader(reader)
+
+	recvBuf := make([]byte, recvHeader.Len)
+	for i := 0; i < int(recvHeader.Len); i++ {
+		in,_ := reader.ReadByte()
+		recvBuf[i] = in
+	}
+
+	acc := protocol.DecodeAcc(recvBuf)
+	fmt.Printf("%v\n", acc)
+	conn.Close()
+}
+
+func sendAccTx() {
+	var conn net.Conn
+	rand := rand.New(rand.NewSource(time.Now().Unix()))
+	conn, _ = net.Dial("tcp", "127.0.0.1:8081")
+	tx,_ := protocol.ConstrAccTx(rand.Uint64()%100+1,&RootPrivKey)
+	accData := protocol.EncodeAccTx(tx)
+	header := protocol.ConstructHeader(len(accData), protocol.ACCTX)
+
+	toSend := make([]byte, len(accData)+len(header))
+	copy(toSend[0:protocol.HEADER_LEN],header[:])
+	copy(toSend[protocol.HEADER_LEN:],accData[:])
+	conn.Write(toSend)
+
+	conn.Close()
+}
+
+func sendFundsTx() {
+	var conn net.Conn
+	var txCnt uint32
+	rand := rand.New(rand.NewSource(time.Now().Unix()))
+	conn, _ = net.Dial("tcp", "127.0.0.1:8081")
+	tx, _ := protocol.ConstrFundsTx(0x02,rand.Uint64()%100+1, rand.Uint64()%50+1, txCnt, accA.Hash,accB.Hash, &PrivKeyA)
+	fundsData := protocol.EncodeFundsTx(tx)
+	header := protocol.ConstructHeader(len(fundsData), protocol.FUNDSTX)
+
+	toSend := make([]byte, len(fundsData)+len(header))
+	copy(toSend[0:protocol.HEADER_LEN],header[:])
+	copy(toSend[protocol.HEADER_LEN:],fundsData[:])
+
+	conn.Write(toSend)
+	conn.Close()
+}
+
+func sendTimeReq() {
+	var conn net.Conn
+
+	conn, _ = net.Dial("tcp", "127.0.0.1:8081")
+
+	header := protocol.ConstructHeader(0, protocol.TIME_REQ)
+	toSend := make([]byte, protocol.HEADER_LEN)
+	copy(toSend[:], header[:])
+	conn.Write(toSend)
+
+	reader := bufio.NewReader(conn)
+	recvHeader := protocol.ExtractHeader(reader)
+
+	recvBuf := make([]byte, recvHeader.Len)
+	for i := 0; i < int(recvHeader.Len); i++ {
+		in,_ := reader.ReadByte()
+		recvBuf[i] = in
+	}
+
+	conn.Close()
+}
+
+
+*/
