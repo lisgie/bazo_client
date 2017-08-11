@@ -34,7 +34,7 @@ func main() {
 		tx, err = parseFundsTx(os.Args[2:])
 		msgType = p2p.FUNDSTX_BRDCST
 	case "configTx":
-		err = parseConfigTx(os.Args[2:])
+		tx, err = parseConfigTx(os.Args[2:])
 		msgType = p2p.CONFIGTX_BRDCST
 	default:
 		fmt.Printf("Usage: bazo_client [accTx|fundsTx|configTx] ...\n")
@@ -129,12 +129,12 @@ func parseAccTx(args []string) (protocol.Transaction, error) {
 
 	//Write the public key to the given textfile
 	if _, err = os.Stat(args[3]); !os.IsNotExist(err) {
-		fmt.Print("Output file exists.\nUsage: bazo_client accTx <header> <fee> <privKey> <keyOutput>")
+		return nil, errors.New("Output file exists.\nUsage: bazo_client accTx <header> <fee> <privKey> <keyOutput>")
 	}
 
 	file, err = os.Create(args[3])
 	if err != nil {
-		fmt.Printf(fmt.Sprintf("%v\nUsage: bazo_client accTx <header> <fee> <privKey> <keyOutput>", err))
+		return nil, errors.New(fmt.Sprintf("%v\nUsage: bazo_client accTx <header> <fee> <privKey> <keyOutput>", err))
 	}
 
 	_,err = file.WriteString(string(newKey.X.Text(16))+"\n")
@@ -142,7 +142,7 @@ func parseAccTx(args []string) (protocol.Transaction, error) {
 	_,err3 = file.WriteString(string(newKey.D.Text(16)))
 
 	if err != nil || err2 != nil || err3 != nil {
-		fmt.Printf("Failed to write key to file\nUsage: bazo_client accTx <header> <fee> <privKey> <keyOutput>")
+		return nil, errors.New("Failed to write key to file\nUsage: bazo_client accTx <header> <fee> <privKey> <keyOutput>")
 	}
 
 	return tx, nil
@@ -266,9 +266,47 @@ func parseFundsTx(args []string) (protocol.Transaction, error) {
 	return tx, nil
 }
 
-func parseConfigTx(args []string) error {
+func parseConfigTx(args []string) (protocol.Transaction, error) {
 
-	return nil
+	if len(args) != 6 {
+		return nil, errors.New("Wrong number of arguments.\nUsage: bazo_client configTx <header> <id> <payload> <fee> <txCnt> <privKey>")
+	}
+
+	header, err := strconv.Atoi(args[0])
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("%v\nUsage: bazo_client fundsTx <header> <amount> <fee> <txCnt> <fromHash> <toHash> <privKey>", err))
+	}
+
+	id, err := strconv.Atoi(args[1])
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("%v\nUsage: bazo_client fundsTx <header> <amount> <fee> <txCnt> <fromHash> <toHash> <privKey>", err))
+	}
+
+	payload, err := strconv.Atoi(args[2])
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("%v\nUsage: bazo_client fundsTx <header> <amount> <fee> <txCnt> <fromHash> <toHash> <privKey>", err))
+	}
+
+	fee, err := strconv.Atoi(args[3])
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("%v\nUsage: bazo_client fundsTx <header> <amount> <fee> <txCnt> <fromHash> <toHash> <privKey>", err))
+	}
+
+	txCnt, err := strconv.Atoi(args[4])
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("%v\nUsage: bazo_client fundsTx <header> <amount> <fee> <txCnt> <fromHash> <toHash> <privKey>", err))
+	}
+
+	tx, err := protocol.ConstrConfigTx(
+		byte(header),
+		uint8(id),
+		uint64(payload),
+		uint64(fee),
+		uint8(txCnt),
+		&privKey,
+	)
+
+	return nil,nil
 }
 
 func serializeHashContent(data interface{}) (hash [32]byte) {
