@@ -108,7 +108,7 @@ func parseAccTx(args []string) (protocol.Transaction, error) {
 
 	_,err = file.WriteString(string(newKey.X.Text(16))+"\n")
 	_,err2 := file.WriteString(string(newKey.Y.Text(16))+"\n")
-	_,err3 := file.WriteString(string(newKey.D.Text(16)))
+	_,err3 := file.WriteString(string(newKey.D.Text(16))+"\n")
 
 	if err != nil || err2 != nil || err3 != nil {
 		return nil, errors.New("Failed to write key to file\nUsage: bazo_client accTx <header> <fee> <privKey> <keyOutput>")
@@ -279,24 +279,30 @@ func extractKeyFromFile(filename string) (pubKey ecdsa.PublicKey, privKey ecdsa.
 	pub2, err2 := reader.ReadString('\n')
 	//Private Key
 	priv, err3 := reader.ReadString('\n')
-	if err != nil || err2 != nil || err3 != nil {
+	if err != nil || err2 != nil {
 		return pubKey, privKey, errors.New(fmt.Sprintf("Could not read key from file: %v", err))
 	}
 
 	pub1Int, b := new(big.Int).SetString(strings.Split(pub1,"\n")[0], 16)
 	pub2Int, b2 := new(big.Int).SetString(strings.Split(pub2,"\n")[0], 16)
-	privInt, b3 := new(big.Int).SetString(strings.Split(priv,"\n")[0], 16)
-	if !b || !b2 || !b3 {
-		return pubKey, privKey, errors.New("Failed to convert the key strings to big.Int.")
-	}
+
 	pubKey = ecdsa.PublicKey{
 		elliptic.P256(),
 		pub1Int,
 		pub2Int,
 	}
-	privKey = ecdsa.PrivateKey{
-		pubKey,
-		privInt,
+
+	//File consists of public & private key
+	if err3 == nil {
+		privInt, b3 := new(big.Int).SetString(strings.Split(priv,"\n")[0], 16)
+		if !b || !b2 || !b3 {
+			return pubKey, privKey, errors.New("Failed to convert the key strings to big.Int.")
+		}
+
+		privKey = ecdsa.PrivateKey{
+			pubKey,
+			privInt,
+		}
 	}
 
 	return pubKey, privKey, nil
