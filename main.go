@@ -1,33 +1,38 @@
 package main
 
 import (
-	"os"
-	"fmt"
-	"errors"
-	"strconv"
 	"bufio"
-	"math/big"
+	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	"github.com/lisgie/bazo_miner/protocol"
-	"github.com/lisgie/bazo_miner/p2p"
-	"net"
-	"strings"
-	"bytes"
+	"crypto/rand"
 	"encoding/binary"
+	"errors"
+	"fmt"
+	"github.com/lisgie/bazo_miner/p2p"
+	"github.com/lisgie/bazo_miner/protocol"
 	"golang.org/x/crypto/sha3"
+	"math/big"
+	"net"
+	"os"
+	"strconv"
+	"strings"
 )
 
 func main() {
 
 	var (
-		err error
+		err     error
 		msgType uint8
-		tx protocol.Transaction
+		tx      protocol.Transaction
 	)
 
 	switch os.Args[1] {
 	case "accTx":
+		_, err := os.Stat(os.Args[4])
+		if err != nil {
+			err = generateKeyPair(os.Args[4])
+		}
 		tx, err = parseAccTx(os.Args[2:])
 		msgType = p2p.ACCTX_BRDCST
 	case "fundsTx":
@@ -55,7 +60,7 @@ func main() {
 		fmt.Printf("%v\n", err)
 		return
 	}
-	n,err := conn.Write(packet)
+	n, err := conn.Write(packet)
 
 	if n != len(packet) || err != nil {
 		fmt.Printf("Transmission failed\n")
@@ -87,7 +92,7 @@ func parseAccTx(args []string) (protocol.Transaction, error) {
 		return nil, errors.New(fmt.Sprintf("%v\nUsage: bazo_client accTx <header> <fee> <privKey> <keyOutput>", err))
 	}
 
-	tx,newKey,err := protocol.ConstrAccTx(byte(header), uint64(fee), &privKey)
+	tx, newKey, err := protocol.ConstrAccTx(byte(header), uint64(fee), &privKey)
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("%v\nUsage: bazo_client accTx <header> <fee> <privKey> <keyOutput>", err))
 	}
@@ -106,9 +111,9 @@ func parseAccTx(args []string) (protocol.Transaction, error) {
 		return nil, errors.New(fmt.Sprintf("%v\nUsage: bazo_client accTx <header> <fee> <privKey> <keyOutput>", err))
 	}
 
-	_,err = file.WriteString(string(newKey.X.Text(16))+"\n")
-	_,err2 := file.WriteString(string(newKey.Y.Text(16))+"\n")
-	_,err3 := file.WriteString(string(newKey.D.Text(16))+"\n")
+	_, err = file.WriteString(string(newKey.X.Text(16)) + "\n")
+	_, err2 := file.WriteString(string(newKey.Y.Text(16)) + "\n")
+	_, err3 := file.WriteString(string(newKey.D.Text(16)) + "\n")
 
 	if err != nil || err2 != nil || err3 != nil {
 		return nil, errors.New("Failed to write key to file\nUsage: bazo_client accTx <header> <fee> <privKey> <keyOutput>")
@@ -160,8 +165,8 @@ func parseFundsTx(args []string) (protocol.Transaction, error) {
 		return nil, errors.New(fmt.Sprintf("%v\nUsage: bazo_client fundsTx <header> <amount> <fee> <txCnt> <fromHash> <toHash> <privKey>", err))
 	}
 
-	pub1Int,_ := new(big.Int).SetString(strings.Split(pub1,"\n")[0], 16)
-	pub2Int,_ := new(big.Int).SetString(strings.Split(pub2,"\n")[0], 16)
+	pub1Int, _ := new(big.Int).SetString(strings.Split(pub1, "\n")[0], 16)
+	pub2Int, _ := new(big.Int).SetString(strings.Split(pub2, "\n")[0], 16)
 	copy(fromPubKey[0:32], pub1Int.Bytes())
 	copy(fromPubKey[32:64], pub2Int.Bytes())
 
@@ -178,12 +183,12 @@ func parseFundsTx(args []string) (protocol.Transaction, error) {
 		return nil, errors.New(fmt.Sprintf("%v\nUsage: bazo_client fundsTx <header> <amount> <fee> <txCnt> <fromHash> <toHash> <privKey>", err))
 	}
 
-	pub1Int,_ = new(big.Int).SetString(strings.Split(pub1,"\n")[0], 16)
-	pub2Int,_ = new(big.Int).SetString(strings.Split(pub2,"\n")[0], 16)
+	pub1Int, _ = new(big.Int).SetString(strings.Split(pub1, "\n")[0], 16)
+	pub2Int, _ = new(big.Int).SetString(strings.Split(pub2, "\n")[0], 16)
 	copy(toPubKey[0:32], pub1Int.Bytes())
 	copy(toPubKey[32:64], pub2Int.Bytes())
 
-	_,privKey,err := extractKeyFromFile(args[6])
+	_, privKey, err := extractKeyFromFile(args[6])
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("%v\nUsage: bazo_client fundsTx <header> <amount> <fee> <txCnt> <fromHash> <toHash> <privKey>", err))
 	}
@@ -262,7 +267,7 @@ func parseConfigTx(args []string) (protocol.Transaction, error) {
 		return nil, errors.New("Transaction encoding failed.\nUsage: bazo_client configTx <header> <id> <payload> <fee> <txCnt> <privKey>")
 	}
 
-	return tx,nil
+	return tx, nil
 }
 
 func extractKeyFromFile(filename string) (pubKey ecdsa.PublicKey, privKey ecdsa.PrivateKey, err error) {
@@ -283,8 +288,8 @@ func extractKeyFromFile(filename string) (pubKey ecdsa.PublicKey, privKey ecdsa.
 		return pubKey, privKey, errors.New(fmt.Sprintf("Could not read key from file: %v", err))
 	}
 
-	pub1Int, b := new(big.Int).SetString(strings.Split(pub1,"\n")[0], 16)
-	pub2Int, b2 := new(big.Int).SetString(strings.Split(pub2,"\n")[0], 16)
+	pub1Int, b := new(big.Int).SetString(strings.Split(pub1, "\n")[0], 16)
+	pub2Int, b2 := new(big.Int).SetString(strings.Split(pub2, "\n")[0], 16)
 
 	pubKey = ecdsa.PublicKey{
 		elliptic.P256(),
@@ -294,7 +299,7 @@ func extractKeyFromFile(filename string) (pubKey ecdsa.PublicKey, privKey ecdsa.
 
 	//File consists of public & private key
 	if err3 == nil {
-		privInt, b3 := new(big.Int).SetString(strings.Split(priv,"\n")[0], 16)
+		privInt, b3 := new(big.Int).SetString(strings.Split(priv, "\n")[0], 16)
 		if !b || !b2 || !b3 {
 			return pubKey, privKey, errors.New("Failed to convert the key strings to big.Int.")
 		}
@@ -313,4 +318,36 @@ func serializeHashContent(data interface{}) (hash [32]byte) {
 	var buf bytes.Buffer
 	binary.Write(&buf, binary.BigEndian, data)
 	return sha3.Sum256(buf.Bytes())
+}
+
+func generateKeyPair(filename string) error {
+
+	newRootKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+
+	if err != nil {
+		return err
+	}
+
+	file, err := os.Create(filename)
+	if err != nil {
+		return errors.New(fmt.Sprintf("%v\nUsage: bazo_client accTx <header> <fee> <privKey> <keyOutput>", err))
+	}
+
+	var rootPublicKey [64]byte
+	rootPubKey1, rootPubKey2 := newRootKey.PublicKey.X.Bytes(), newRootKey.PublicKey.Y.Bytes()
+	copy(rootPublicKey[32-len(rootPubKey1):32], rootPubKey1)
+	copy(rootPublicKey[64-len(rootPubKey2):], rootPubKey2)
+
+	hash := serializeHashContent(rootPublicKey)
+
+	_, err = file.WriteString(string(newRootKey.X.Text(16)) + "\n")
+	_, err2 := file.WriteString(string(newRootKey.Y.Text(16)) + "\n")
+	_, err3 := file.WriteString(string(newRootKey.D.Text(16)) + "\n")
+	fmt.Printf("BeneficiaryHash: %x\n", hash)
+
+	if err != nil || err2 != nil || err3 != nil {
+		return errors.New("Failed to write key to file\nUsage: bazo_client accTx <header> <fee> <privKey> <keyOutput>")
+	}
+
+	return nil
 }
