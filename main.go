@@ -9,14 +9,15 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/lisgie/bazo_miner/p2p"
-	"github.com/lisgie/bazo_miner/protocol"
 	"golang.org/x/crypto/sha3"
 	"math/big"
 	"net"
 	"os"
 	"strconv"
 	"strings"
+	"github.com/mchetelat/bazo_miner/protocol"
+	"github.com/mchetelat/bazo_miner/p2p"
+	time "time"
 )
 
 func main() {
@@ -67,6 +68,24 @@ func main() {
 	}
 
 	fmt.Printf("Successfully sent the following tansaction:\n%v\n", tx)
+
+	//Wait for response
+	start := time.Now()
+	for {
+		//Time out after 10 seconds
+		if time.Since(start).Seconds() > 10 {
+			fmt.Printf("Connection to %v aborted: (TimeOut)\n", p2p.BOOTSTRAP_SERVER)
+			break
+		}
+
+		reader := bufio.NewReader(conn)
+		header, _ := p2p.ReadHeader(reader)
+
+		if header != nil && header.TypeID == p2p.TX_BRDCST_ACK {
+			fmt.Printf("Transaction successfully processed by network\n")
+			break
+		}
+	}
 
 	conn.Close()
 }
