@@ -9,15 +9,15 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/mchetelat/bazo_client/client"
+	"github.com/mchetelat/bazo_miner/p2p"
+	"github.com/mchetelat/bazo_miner/protocol"
 	"golang.org/x/crypto/sha3"
 	"math/big"
-	"net"
 	"os"
 	"strconv"
 	"strings"
-	"github.com/mchetelat/bazo_miner/protocol"
-	"github.com/mchetelat/bazo_miner/p2p"
-	time "time"
+	"time"
 )
 
 func main() {
@@ -28,66 +28,66 @@ func main() {
 		tx      protocol.Transaction
 	)
 
-	switch os.Args[1] {
-	case "accTx":
-		_, err := os.Stat(os.Args[4])
+	client.Init()
+
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "accTx":
+			_, err := os.Stat(os.Args[4])
+			if err != nil {
+				err = generateKeyPair(os.Args[4])
+			}
+			tx, err = parseAccTx(os.Args[2:])
+			msgType = p2p.ACCTX_BRDCST
+		case "fundsTx":
+			tx, err = parseFundsTx(os.Args[2:])
+			msgType = p2p.FUNDSTX_BRDCST
+		case "configTx":
+			tx, err = parseConfigTx(os.Args[2:])
+			msgType = p2p.CONFIGTX_BRDCST
+		default:
+			fmt.Printf("Usage: bazo_client [accTx|fundsTx|configTx] ...\n")
+			return
+		}
+
 		if err != nil {
-			err = generateKeyPair(os.Args[4])
-		}
-		tx, err = parseAccTx(os.Args[2:])
-		msgType = p2p.ACCTX_BRDCST
-	case "fundsTx":
-		tx, err = parseFundsTx(os.Args[2:])
-		msgType = p2p.FUNDSTX_BRDCST
-	case "configTx":
-		tx, err = parseConfigTx(os.Args[2:])
-		msgType = p2p.CONFIGTX_BRDCST
-	default:
-		fmt.Printf("Usage: bazo_client [accTx|fundsTx|configTx] ...\n")
-		return
-	}
-
-	if err != nil {
-		fmt.Printf("%v\n", err)
-		return
-	}
-
-	//Transaction creation successful
-	packet := p2p.BuildPacket(msgType, tx.Encode())
-
-	//Open a connection
-	conn, err := net.Dial("tcp", p2p.BOOTSTRAP_SERVER)
-	if err != nil {
-		fmt.Printf("%v\n", err)
-		return
-	}
-	n, err := conn.Write(packet)
-
-	if n != len(packet) || err != nil {
-		fmt.Printf("Transmission failed\n")
-	}
-
-	fmt.Printf("Successfully sent the following tansaction:\n%v\n", tx)
-
-	//Wait for response
-	start := time.Now()
-	for {
-		//Time out after 10 seconds
-		if time.Since(start).Seconds() > 10 {
-			fmt.Printf("Connection to %v aborted: (TimeOut)\n", p2p.BOOTSTRAP_SERVER)
-			break
+			fmt.Printf("%v\n", err)
+			return
 		}
 
-		reader := bufio.NewReader(conn)
-		header, _ := p2p.ReadHeader(reader)
+		//Transaction creation successful
+		packet := p2p.BuildPacket(msgType, tx.Encode())
 
-		if header != nil && header.TypeID == p2p.TX_BRDCST_ACK {
-			fmt.Printf("Transaction successfully processed by network\n")
-			break
+		//Open a connection
+		conn := client.Connect(p2p.BOOTSTRAP_SERVER)
+		n, err := conn.Write(packet)
+
+		if n != len(packet) || err != nil {
+			fmt.Printf("Transmission failed\n")
 		}
-	}
 
-	conn.Close()
+		fmt.Printf("Successfully sent the following tansaction:\n%v\n", tx)
+
+		//Wait for response
+		start := time.Now()
+		for {
+			//Time out after 10 seconds
+			if time.Since(start).Seconds() > 10 {
+				fmt.Printf("Connection to %v aborted: (TimeOut)\n", p2p.BOOTSTRAP_SERVER)
+				break
+			}
+
+			reader := bufio.NewReader(conn)
+			header, _ := p2p.ReadHeader(reader)
+
+			if header != nil && header.TypeID == p2p.TX_BRDCST_ACK {
+				fmt.Printf("Transaction successfully processed by network\n")
+				break
+			}
+		}
+
+		conn.Close()
+	}
 }
 
 func parseAccTx(args []string) (protocol.Transaction, error) {
