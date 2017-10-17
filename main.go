@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	"crypto/rand"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -18,6 +17,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
+)
+
+var (
+	argsMsg = "Wrong number of arguments."
 )
 
 func main() {
@@ -33,10 +36,10 @@ func main() {
 	if len(os.Args) > 1 {
 		switch os.Args[1] {
 		case "accTx":
-			_, err := os.Stat(os.Args[4])
-			if err != nil {
-				err = generateKeyPair(os.Args[4])
-			}
+			//_, err := os.Stat(os.Args[4])
+			//if err != nil {
+			//	err = generateKeyPair(os.Args[4])
+			//}
 			tx, err = parseAccTx(os.Args[2:])
 			msgType = p2p.ACCTX_BRDCST
 		case "fundsTx":
@@ -91,43 +94,44 @@ func main() {
 }
 
 func parseAccTx(args []string) (protocol.Transaction, error) {
+	accTxUsage := "\nUsage: bazo_client accTx <header> <fee> <privKey> <keyOutput>"
 
 	if len(args) != 4 {
-		return nil, errors.New("Wrong number of arguments.\nUsage: bazo_client accTx <header> <fee> <privKey> <keyOutput>")
+		return nil, errors.New(fmt.Sprintf("%v%v", argsMsg, accTxUsage))
 	}
 
 	header, err := strconv.Atoi(args[0])
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v\nUsage: bazo_client accTx <header> <fee> <privKey> <keyOutput>", err))
+		return nil, errors.New(fmt.Sprintf("%v%v", err, accTxUsage))
 	}
 
 	fee, err := strconv.Atoi(args[1])
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v\nUsage: bazo_client accTx <header> <fee> <privKey> <keyOutput>", err))
+		return nil, errors.New(fmt.Sprintf("%v%v", err, accTxUsage))
 	}
 
 	_, privKey, err := extractKeyFromFile(args[2])
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v\nUsage: bazo_client accTx <header> <fee> <privKey> <keyOutput>", err))
+		return nil, errors.New(fmt.Sprintf("%v%v", err, accTxUsage))
 	}
 
 	tx, newKey, err := protocol.ConstrAccTx(byte(header), uint64(fee), &privKey)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v\nUsage: bazo_client accTx <header> <fee> <privKey> <keyOutput>", err))
+		return nil, errors.New(fmt.Sprintf("%v%v", err, accTxUsage))
 	}
 
 	if tx == nil {
-		return nil, errors.New("Transaction encoding failed.\nUsage: bazo_client accTx <header> <fee> <privKey> <keyOutput>")
+		return nil, errors.New(fmt.Sprintf("Transaction encoding failed.%v", accTxUsage))
 	}
 
 	//Write the public key to the given textfile
 	if _, err = os.Stat(args[3]); !os.IsNotExist(err) {
-		return nil, errors.New("Output file exists.\nUsage: bazo_client accTx <header> <fee> <privKey> <keyOutput>")
+		return nil, errors.New(fmt.Sprintf("Output file exists.%v", accTxUsage))
 	}
 
 	file, err := os.Create(args[3])
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v\nUsage: bazo_client accTx <header> <fee> <privKey> <keyOutput>", err))
+		return nil, errors.New(fmt.Sprintf("%v%v", err, accTxUsage))
 	}
 
 	_, err = file.WriteString(string(newKey.X.Text(16)) + "\n")
@@ -135,45 +139,46 @@ func parseAccTx(args []string) (protocol.Transaction, error) {
 	_, err3 := file.WriteString(string(newKey.D.Text(16)) + "\n")
 
 	if err != nil || err2 != nil || err3 != nil {
-		return nil, errors.New("Failed to write key to file\nUsage: bazo_client accTx <header> <fee> <privKey> <keyOutput>")
+		return nil, errors.New(fmt.Sprintf("Failed to write key to file%v", accTxUsage))
 	}
 
 	return tx, nil
 }
 
 func parseFundsTx(args []string) (protocol.Transaction, error) {
+	fundsTxUsage := "\nUsage: bazo_client fundsTx <header> <amount> <fee> <txCnt> <fromHash> <toHash> <privKey>"
 
 	var (
 		fromPubKey, toPubKey [64]byte
 	)
 
 	if len(args) != 7 {
-		return nil, errors.New("Wrong number of arguments.\nUsage: bazo_client fundsTx <header> <amount> <fee> <txCnt> <fromHash> <toHash> <privKey>")
+		return nil, errors.New(fmt.Sprintf("%v%v", argsMsg, fundsTxUsage))
 	}
 
 	header, err := strconv.Atoi(args[0])
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v\nUsage: bazo_client fundsTx <header> <amount> <fee> <txCnt> <fromHash> <toHash> <privKey>", err))
+		return nil, errors.New(fmt.Sprintf("%v%v", err, fundsTxUsage))
 	}
 
 	amount, err := strconv.Atoi(args[1])
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v\nUsage: bazo_client fundsTx <header> <amount> <fee> <txCnt> <fromHash> <toHash> <privKey>", err))
+		return nil, errors.New(fmt.Sprintf("%v%v", err, fundsTxUsage))
 	}
 
 	fee, err := strconv.Atoi(args[2])
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v\nUsage: bazo_client fundsTx <header> <amount> <fee> <txCnt> <fromHash> <toHash> <privKey>", err))
+		return nil, errors.New(fmt.Sprintf("%v%v", err, fundsTxUsage))
 	}
 
 	txCnt, err := strconv.Atoi(args[3])
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v\nUsage: bazo_client fundsTx <header> <amount> <fee> <txCnt> <fromHash> <toHash> <privKey>", err))
+		return nil, errors.New(fmt.Sprintf("%v%v", err, fundsTxUsage))
 	}
 
 	hashFromFile, err := os.Open(args[4])
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v\nUsage: bazo_client fundsTx <header> <amount> <fee> <txCnt> <fromHash> <toHash> <privKey>", err))
+		return nil, errors.New(fmt.Sprintf("%v%v", err, fundsTxUsage))
 	}
 
 	reader := bufio.NewReader(hashFromFile)
@@ -181,7 +186,7 @@ func parseFundsTx(args []string) (protocol.Transaction, error) {
 	pub1, err := reader.ReadString('\n')
 	pub2, err2 := reader.ReadString('\n')
 	if err != nil || err2 != nil {
-		return nil, errors.New(fmt.Sprintf("%v\nUsage: bazo_client fundsTx <header> <amount> <fee> <txCnt> <fromHash> <toHash> <privKey>", err))
+		return nil, errors.New(fmt.Sprintf("%v%v", err, fundsTxUsage))
 	}
 
 	pub1Int, _ := new(big.Int).SetString(strings.Split(pub1, "\n")[0], 16)
@@ -191,7 +196,7 @@ func parseFundsTx(args []string) (protocol.Transaction, error) {
 
 	hashToFile, err := os.Open(args[5])
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v\nUsage: bazo_client fundsTx <header> <amount> <fee> <txCnt> <fromHash> <toHash> <privKey>", err))
+		return nil, errors.New(fmt.Sprintf("%v%v", err, fundsTxUsage))
 	}
 
 	reader.Reset(hashToFile)
@@ -199,7 +204,7 @@ func parseFundsTx(args []string) (protocol.Transaction, error) {
 	pub1, err = reader.ReadString('\n')
 	pub2, err2 = reader.ReadString('\n')
 	if err != nil || err2 != nil {
-		return nil, errors.New(fmt.Sprintf("%v\nUsage: bazo_client fundsTx <header> <amount> <fee> <txCnt> <fromHash> <toHash> <privKey>", err))
+		return nil, errors.New(fmt.Sprintf("%v%v", err, fundsTxUsage))
 	}
 
 	pub1Int, _ = new(big.Int).SetString(strings.Split(pub1, "\n")[0], 16)
@@ -209,7 +214,7 @@ func parseFundsTx(args []string) (protocol.Transaction, error) {
 
 	_, privKey, err := extractKeyFromFile(args[6])
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v\nUsage: bazo_client fundsTx <header> <amount> <fee> <txCnt> <fromHash> <toHash> <privKey>", err))
+		return nil, errors.New(fmt.Sprintf("%v%v", err, fundsTxUsage))
 	}
 
 	tx, err := protocol.ConstrFundsTx(
@@ -223,50 +228,51 @@ func parseFundsTx(args []string) (protocol.Transaction, error) {
 	)
 
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v\nUsage: bazo_client fundsTx <header> <amount> <fee> <txCnt> <fromHash> <toHash> <privKey>", err))
+		return nil, errors.New(fmt.Sprintf("%v%v", err, fundsTxUsage))
 	}
 
 	if tx == nil {
-		return nil, errors.New("Transaction encoding failed.\nUsage: bazo_client fundsTx <header> <amount> <fee> <txCnt> <fromHash> <toHash> <privKey>")
+		return nil, errors.New(fmt.Sprintf("Transaction encoding failed.%v", fundsTxUsage))
 	}
 
 	return tx, nil
 }
 
 func parseConfigTx(args []string) (protocol.Transaction, error) {
+	configTxUsage := "\nUsage: bazo_client configTx <header> <id> <payload> <fee> <txCnt> <privKey>"
 
 	if len(args) != 6 {
-		return nil, errors.New("Wrong number of arguments.\nUsage: bazo_client configTx <header> <id> <payload> <fee> <txCnt> <privKey>")
+		return nil, errors.New(fmt.Sprintf("%v%v", argsMsg, configTxUsage))
 	}
 
 	header, err := strconv.Atoi(args[0])
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v\nUsage: bazo_client configTx <header> <id> <payload> <fee> <txCnt> <privKey>", err))
+		return nil, errors.New(fmt.Sprintf("%v%v", argsMsg, configTxUsage))
 	}
 
 	id, err := strconv.Atoi(args[1])
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v\nUsage: bazo_client configTx <header> <id> <payload> <fee> <txCnt> <privKey>", err))
+		return nil, errors.New(fmt.Sprintf("%v%v", argsMsg, configTxUsage))
 	}
 
 	payload, err := strconv.Atoi(args[2])
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v\nUsage: bazo_client configTx <header> <id> <payload> <fee> <txCnt> <privKey>", err))
+		return nil, errors.New(fmt.Sprintf("%v%v", argsMsg, configTxUsage))
 	}
 
 	fee, err := strconv.Atoi(args[3])
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v\nUsage: bazo_client configTx <header> <id> <payload> <fee> <txCnt> <privKey>", err))
+		return nil, errors.New(fmt.Sprintf("%v%v", argsMsg, configTxUsage))
 	}
 
 	txCnt, err := strconv.Atoi(args[4])
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v\nUsage: bazo_client configTx <header> <id> <payload> <fee> <txCnt> <privKey>", err))
+		return nil, errors.New(fmt.Sprintf("%v%v", argsMsg, configTxUsage))
 	}
 
 	_, privKey, err := extractKeyFromFile(args[5])
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v\nUsage: bazo_client configTx <header> <id> <payload> <fee> <txCnt> <privKey>", err))
+		return nil, errors.New(fmt.Sprintf("%v%v", argsMsg, configTxUsage))
 	}
 
 	tx, err := protocol.ConstrConfigTx(
@@ -279,11 +285,11 @@ func parseConfigTx(args []string) (protocol.Transaction, error) {
 	)
 
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v\nUsage: bazo_client configTx <header> <id> <payload> <fee> <txCnt> <privKey>", err))
+		return nil, errors.New(fmt.Sprintf("%v%v", argsMsg, configTxUsage))
 	}
 
 	if tx == nil {
-		return nil, errors.New("Transaction encoding failed.\nUsage: bazo_client configTx <header> <id> <payload> <fee> <txCnt> <privKey>")
+		return nil, errors.New(fmt.Sprintf("Transaction encoding failed.%v", configTxUsage))
 	}
 
 	return tx, nil
@@ -339,34 +345,34 @@ func serializeHashContent(data interface{}) (hash [32]byte) {
 	return sha3.Sum256(buf.Bytes())
 }
 
-func generateKeyPair(filename string) error {
-
-	newRootKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-
-	if err != nil {
-		return err
-	}
-
-	file, err := os.Create(filename)
-	if err != nil {
-		return errors.New(fmt.Sprintf("%v\nUsage: bazo_client accTx <header> <fee> <privKey> <keyOutput>", err))
-	}
-
-	var rootPublicKey [64]byte
-	rootPubKey1, rootPubKey2 := newRootKey.PublicKey.X.Bytes(), newRootKey.PublicKey.Y.Bytes()
-	copy(rootPublicKey[32-len(rootPubKey1):32], rootPubKey1)
-	copy(rootPublicKey[64-len(rootPubKey2):], rootPubKey2)
-
-	hash := serializeHashContent(rootPublicKey)
-
-	_, err = file.WriteString(string(newRootKey.X.Text(16)) + "\n")
-	_, err2 := file.WriteString(string(newRootKey.Y.Text(16)) + "\n")
-	_, err3 := file.WriteString(string(newRootKey.D.Text(16)) + "\n")
-	fmt.Printf("BeneficiaryHash: %x\n", hash)
-
-	if err != nil || err2 != nil || err3 != nil {
-		return errors.New("Failed to write key to file\nUsage: bazo_client accTx <header> <fee> <privKey> <keyOutput>")
-	}
-
-	return nil
-}
+//func generateKeyPair(filename string) error {
+//
+//	newRootKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+//
+//	if err != nil {
+//		return err
+//	}
+//
+//	file, err := os.Create(filename)
+//	if err != nil {
+//		return errors.New(fmt.Sprintf("%v\nUsage: bazo_client accTx <header> <fee> <privKey> <keyOutput>", err))
+//	}
+//
+//	var rootPublicKey [64]byte
+//	rootPubKey1, rootPubKey2 := newRootKey.PublicKey.X.Bytes(), newRootKey.PublicKey.Y.Bytes()
+//	copy(rootPublicKey[32-len(rootPubKey1):32], rootPubKey1)
+//	copy(rootPublicKey[64-len(rootPubKey2):], rootPubKey2)
+//
+//	hash := serializeHashContent(rootPublicKey)
+//
+//	_, err = file.WriteString(string(newRootKey.X.Text(16)) + "\n")
+//	_, err2 := file.WriteString(string(newRootKey.Y.Text(16)) + "\n")
+//	_, err3 := file.WriteString(string(newRootKey.D.Text(16)) + "\n")
+//	fmt.Printf("BeneficiaryHash: %x\n", hash)
+//
+//	if err != nil || err2 != nil || err3 != nil {
+//		return errors.New("Failed to write key to file\nUsage: bazo_client accTx <header> <fee> <privKey> <keyOutput>")
+//	}
+//
+//	return nil
+//}
