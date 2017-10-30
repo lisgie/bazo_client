@@ -9,11 +9,13 @@ import (
 func main() {
 
 	switch len(os.Args) {
-	case 1:
-		fmt.Println(fmt.Printf("Usage: bazo_client [pubKey|accTx|fundsTx|configTx] ...\n"))
 	case 2:
-		client.Init(os.Args[1])
+		if os.Args[1] == "accTx" || os.Args[1] == "fundsTx" || os.Args[1] == "configTx" {
+			client.Process(os.Args[1:])
+		} else {
+			client.Init(os.Args[1])
+		}
 	default:
-		client.Process(os.Args[1:])
+		fmt.Printf("Usage: bazo_client [pubKey|accTx|fundsTx|configTx] ...\n")
 	}
 }

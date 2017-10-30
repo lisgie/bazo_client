@@ -12,13 +12,156 @@ import (
 )
 
 var (
-	err     error
-	msgType uint8
-	tx      protocol.Transaction
+	err          error
+	msgType      uint8
+	tx           protocol.Transaction
+	myPubKey     [64]byte
+	myPubKeyHash [32]byte
 )
 
 func Init(keyFile string) {
+	myPubKey, myPubKeyHash, err = getKeys(keyFile)
+	if err != nil {
+		fmt.Printf("%v", err)
+	} else {
+		fmt.Printf("My Public Key: %x\n", myPubKey)
+		fmt.Printf("My Public Key(Hash): %x\n", myPubKeyHash)
+
+		for _, block := range requestRelevantBlocks() {
+
+			fmt.Printf("%v\n", block.String())
+
+			for _, txHash := range block.AccTxData {
+				tx := requestTx(p2p.ACCTX_REQ, txHash)
+				fmt.Printf("%v\n", tx)
+			}
+
+			for _, txHash := range block.FundsTxData {
+				tx := requestTx(p2p.FUNDSTX_REQ, txHash)
+				fmt.Printf("%v\n", tx)
+			}
+		}
+	}
+}
+
+func requestTx(txType uint8, txHash [32]byte) (tx protocol.Transaction) {
+	conn := Connect(p2p.BOOTSTRAP_SERVER)
+
+	packet := p2p.BuildPacket(txType, txHash[:])
+	n, err := conn.Write(packet)
+
+	if n != len(packet) || err != nil {
+		fmt.Printf("Transmission failed\n")
+	}
+
+	reader := bufio.NewReader(conn)
+	header, _ := p2p.ReadHeader(reader)
+	payload := make([]byte, header.Len)
+	for cnt := 0; cnt < int(header.Len); cnt++ {
+		payload[cnt], err = reader.ReadByte()
+	}
+
+	switch txType {
+	case p2p.ACCTX_REQ:
+		var accTx *protocol.AccTx
+		accTx = accTx.Decode(payload)
+		tx = accTx
+	case p2p.FUNDSTX_REQ:
+		var fundsTx *protocol.FundsTx
+		fundsTx = fundsTx.Decode(payload)
+		tx = fundsTx
+	}
+
+	conn.Close()
+
+	return tx
+}
+
+func requestRelevantBlocks() (relevantBlocks []*protocol.Block) {
+	for _, blockHash := range getRelevantBlockHashes() {
+		var block *protocol.Block
+		conn := Connect(p2p.BOOTSTRAP_SERVER)
+
+		packet := p2p.BuildPacket(p2p.BLOCK_REQ, blockHash[:])
+		n, err := conn.Write(packet)
+
+		if n != len(packet) || err != nil {
+			fmt.Printf("Transmission failed\n")
+		}
+
+		reader := bufio.NewReader(conn)
+		header, _ := p2p.ReadHeader(reader)
+		payload := make([]byte, header.Len)
+		for cnt := 0; cnt < int(header.Len); cnt++ {
+			payload[cnt], err = reader.ReadByte()
+		}
+
+		block = block.Decode(payload)
+
+		relevantBlocks = append(relevantBlocks, block)
+
+		conn.Close()
+
+	}
+
+	return relevantBlocks
+}
+
+func getRelevantBlockHashes() (relevantBlockHashes [][32]byte) {
+	spvHeader := requestSPVHeader(nil)
+
+	for _, pubKeyHash := range spvHeader.TxPubKeys {
+		if pubKeyHash == myPubKeyHash {
+			relevantBlockHashes = append(relevantBlockHashes, spvHeader.Hash)
+		}
+	}
+
+	prevHash := spvHeader.PrevHash
+
+	for spvHeader.Hash != [32]byte{} {
+		spvHeader = requestSPVHeader(prevHash[:])
+		for _, pubKeyHash := range spvHeader.TxPubKeys {
+			if pubKeyHash == myPubKeyHash {
+				relevantBlockHashes = append(relevantBlockHashes, spvHeader.Hash)
+			}
+		}
+
+		prevHash = spvHeader.PrevHash
+	}
+
+	return relevantBlockHashes
+}
+
+func requestSPVHeader(blockHash []byte) (spvHeader *protocol.SPVHeader) {
+	conn := Connect(p2p.BOOTSTRAP_SERVER)
+
+	packet := p2p.BuildPacket(p2p.BLOCK_HEADER_REQ, blockHash)
+	n, err := conn.Write(packet)
+
+	if n != len(packet) || err != nil {
+		fmt.Printf("Transmission failed\n")
+	}
+
+	reader := bufio.NewReader(conn)
+	header, _ := p2p.ReadHeader(reader)
+	payload := make([]byte, header.Len)
+	for cnt := 0; cnt < int(header.Len); cnt++ {
+		payload[cnt], err = reader.ReadByte()
+	}
+
+	spvHeader = spvHeader.SPVDecode(payload)
+
+	conn.Close()
+
+	return spvHeader
+}
+
+func getKeys(keyFile string) (myPubKey [64]byte, myPubKeyHash [32]byte, err error) {
 	myKeys, err := os.Open(keyFile)
+	if err != nil {
+		return myPubKey, myPubKeyHash, err
+	}
+
 	reader := bufio.NewReader(myKeys)
 
 	//We only need the public key
@@ -28,68 +171,12 @@ func Init(keyFile string) {
 	pub1Int, _ := new(big.Int).SetString(strings.Split(pub1, "\n")[0], 16)
 	pub2Int, _ := new(big.Int).SetString(strings.Split(pub2, "\n")[0], 16)
 
-	var myPubKey [64]byte
 	copy(myPubKey[0:32], pub1Int.Bytes())
 	copy(myPubKey[32:64], pub2Int.Bytes())
 
-	fmt.Printf("My Public Key: %x\n", myPubKey)
-	fmt.Printf("My Public Key(Hash): %x\n", serializeHashContent(myPubKey))
+	myPubKeyHash = serializeHashContent(myPubKey)
 
-	conn := Connect(p2p.BOOTSTRAP_SERVER)
-
-	packet := p2p.BuildPacket(p2p.BLOCK_HEADER_REQ, nil)
-	n, err := conn.Write(packet)
-
-	if n != len(packet) || err != nil {
-		fmt.Printf("Transmission failed\n")
-	}
-
-	var spvHeader *protocol.SPVHeader
-
-	reader = bufio.NewReader(conn)
-	header, _ := p2p.ReadHeader(reader)
-	payload := make([]byte, header.Len)
-	for cnt := 0; cnt < int(header.Len); cnt++ {
-		payload[cnt], err = reader.ReadByte()
-	}
-
-	spvHeader = spvHeader.SPVDecode(payload)
-
-	//fmt.Printf("%x\n", spvHeader.Hash)
-
-	for _, pubKey := range spvHeader.TxPubKeys {
-		fmt.Printf("Public Key: %x in Block %x\n", pubKey, spvHeader.Hash)
-	}
-
-	conn.Close()
-
-	for spvHeader.Hash != [32]byte{} {
-		conn = Connect(p2p.BOOTSTRAP_SERVER)
-
-		packet = p2p.BuildPacket(p2p.BLOCK_HEADER_REQ, spvHeader.PrevHash[:])
-		n, err = conn.Write(packet)
-
-		if n != len(packet) || err != nil {
-			fmt.Printf("Transmission failed\n")
-		}
-
-		reader = bufio.NewReader(conn)
-		header, _ = p2p.ReadHeader(reader)
-		payload = make([]byte, header.Len)
-		for cnt := 0; cnt < int(header.Len); cnt++ {
-			payload[cnt], err = reader.ReadByte()
-		}
-
-		spvHeader = spvHeader.SPVDecode(payload)
-
-		//fmt.Printf("%x\n", spvHeader.Hash)
-
-		for _, pubKey := range spvHeader.TxPubKeys {
-			fmt.Printf("Public Key: %x in Block %x\n", pubKey, spvHeader.Hash)
-		}
-
-		conn.Close()
-	}
+	return myPubKey, myPubKeyHash, err
 }
 
 func Process(args []string) {
