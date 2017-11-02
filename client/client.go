@@ -114,20 +114,16 @@ func requestRelevantBlocks() (relevantBlocks []*protocol.Block) {
 func getRelevantBlockHashes() (relevantBlockHashes [][32]byte) {
 	spvHeader := requestSPVHeader(nil)
 
-	for _, pubKeyHash := range spvHeader.TxPubKeys {
-		if pubKeyHash == myPubKeyHash {
-			relevantBlockHashes = append(relevantBlockHashes, spvHeader.Hash)
-		}
+	if spvHeader.BloomFilter.Test(myPubKeyHash[:]) {
+		relevantBlockHashes = append(relevantBlockHashes, spvHeader.Hash)
 	}
 
 	prevHash := spvHeader.PrevHash
 
 	for spvHeader.Hash != [32]byte{} {
 		spvHeader = requestSPVHeader(prevHash[:])
-		for _, pubKeyHash := range spvHeader.TxPubKeys {
-			if pubKeyHash == myPubKeyHash {
-				relevantBlockHashes = append(relevantBlockHashes, spvHeader.Hash)
-			}
+		if spvHeader.BloomFilter.Test(myPubKeyHash[:]) {
+			relevantBlockHashes = append(relevantBlockHashes, spvHeader.Hash)
 		}
 
 		prevHash = spvHeader.PrevHash
