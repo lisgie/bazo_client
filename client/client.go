@@ -19,10 +19,14 @@ var (
 	myPubKeyHash [32]byte
 )
 
+const (
+	USAGE_MSG = "Usage: bazo_client [pubKey|accTx|fundsTx|configTx] ...\n"
+)
+
 func Init(keyFile string) {
 	myPubKey, myPubKeyHash, err = getKeys(keyFile)
 	if err != nil {
-		fmt.Printf("%v", err)
+		fmt.Printf("%v\n%v", err, USAGE_MSG)
 	} else {
 		fmt.Printf("My Public Key: %x\n", myPubKey)
 		fmt.Printf("My Public Key(Hash): %x\n", myPubKeyHash)
