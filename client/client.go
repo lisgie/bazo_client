@@ -2,7 +2,9 @@ package client
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
+	"github.com/mchetelat/bazo_miner/miner"
 	"github.com/mchetelat/bazo_miner/p2p"
 	"github.com/mchetelat/bazo_miner/protocol"
 	"math/big"
@@ -12,11 +14,12 @@ import (
 )
 
 var (
-	err          error
-	msgType      uint8
-	tx           protocol.Transaction
-	myPubKey     [64]byte
-	myPubKeyHash [32]byte
+	err        error
+	msgType    uint8
+	tx         protocol.Transaction
+	acc        protocol.Account
+	pubKey     [64]byte
+	pubKeyHash [32]byte
 )
 
 const (
@@ -24,28 +27,67 @@ const (
 )
 
 func Init(keyFile string) {
-	myPubKey, myPubKeyHash, err = getKeys(keyFile)
+	pubKey, pubKeyHash, err = getKeys(keyFile)
 	if err != nil {
 		fmt.Printf("%v\n%v", err, USAGE_MSG)
 	} else {
-		fmt.Printf("My Public Key: %x\n", myPubKey)
-		fmt.Printf("My Public Key(Hash): %x\n", myPubKeyHash)
+		fmt.Printf("My Public Key: %x\n", pubKey)
+		fmt.Printf("My Public Key(Hash): %x\n", pubKeyHash)
 
-		for _, block := range requestRelevantBlocks() {
+		acc.Address = pubKey
 
-			fmt.Printf("%v\n", block.String())
+		for {
+			acc.Balance = 0
 
-			for _, txHash := range block.AccTxData {
-				tx := requestTx(p2p.ACCTX_REQ, txHash)
-				fmt.Printf("%v\n", tx)
+			err := getAccState()
+			if err != nil {
+				println(err)
+				break
 			}
 
-			for _, txHash := range block.FundsTxData {
-				tx := requestTx(p2p.FUNDSTX_REQ, txHash)
-				fmt.Printf("%v\n", tx)
-			}
+			fmt.Println(acc.String())
+
+			time.Sleep(5*time.Second)
 		}
 	}
+}
+
+func getAccState() error {
+	for _, block := range requestRelevantBlocks() {
+
+		err := validateMerkleRoot(block)
+		if err != nil {
+			return err
+		}
+
+		for _, txHash := range block.FundsTxData {
+			tx := requestTx(p2p.FUNDSTX_REQ, txHash)
+			fundsTx := tx.(*protocol.FundsTx)
+			acc.Balance += fundsTx.Amount
+		}
+	}
+
+	return nil
+}
+
+func validateMerkleRoot(block *protocol.Block) error {
+	var txHashSlice [][32]byte
+
+	for _, txHash := range block.AccTxData {
+		txHashSlice = append(txHashSlice, txHash)
+	}
+	for _, txHash := range block.FundsTxData {
+		txHashSlice = append(txHashSlice, txHash)
+	}
+	for _, txHash := range block.ConfigTxData {
+		txHashSlice = append(txHashSlice, txHash)
+	}
+
+	if block.MerkleRoot != miner.BuildMerkleTree(txHashSlice) {
+		return errors.New(fmt.Sprintf("Block %x cannot be validated: Expected Merkle root cannot be recalculated.\n"))
+	}
+
+	return nil
 }
 
 func requestTx(txType uint8, txHash [32]byte) (tx protocol.Transaction) {
@@ -114,7 +156,7 @@ func requestRelevantBlocks() (relevantBlocks []*protocol.Block) {
 func getRelevantBlockHashes() (relevantBlockHashes [][32]byte) {
 	spvHeader := requestSPVHeader(nil)
 
-	if spvHeader.BloomFilter.Test(myPubKeyHash[:]) {
+	if spvHeader.BloomFilter.Test(pubKeyHash[:]) {
 		relevantBlockHashes = append(relevantBlockHashes, spvHeader.Hash)
 	}
 
@@ -122,7 +164,7 @@ func getRelevantBlockHashes() (relevantBlockHashes [][32]byte) {
 
 	for spvHeader.Hash != [32]byte{} {
 		spvHeader = requestSPVHeader(prevHash[:])
-		if spvHeader.BloomFilter.Test(myPubKeyHash[:]) {
+		if spvHeader.BloomFilter.Test(pubKeyHash[:]) {
 			relevantBlockHashes = append(relevantBlockHashes, spvHeader.Hash)
 		}
 
