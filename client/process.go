@@ -67,6 +67,63 @@ func parseAccTx(args []string) (protocol.Transaction, error) {
 	return tx, nil
 }
 
+func parseConfigTx(args []string) (protocol.Transaction, error) {
+	configTxUsage := "\nUsage: bazo_client configTx <header> <id> <payload> <fee> <txCnt> <privKey>"
+
+	if len(args) != 6 {
+		return nil, errors.New(fmt.Sprintf("%v%v", ARGS_MSG, configTxUsage))
+	}
+
+	header, err := strconv.Atoi(args[0])
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("%v%v", ARGS_MSG, configTxUsage))
+	}
+
+	id, err := strconv.Atoi(args[1])
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("%v%v", ARGS_MSG, configTxUsage))
+	}
+
+	payload, err := strconv.Atoi(args[2])
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("%v%v", ARGS_MSG, configTxUsage))
+	}
+
+	fee, err := strconv.Atoi(args[3])
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("%v%v", ARGS_MSG, configTxUsage))
+	}
+
+	txCnt, err := strconv.Atoi(args[4])
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("%v%v", ARGS_MSG, configTxUsage))
+	}
+
+	_, privKey, err := extractKeyFromFile(args[5])
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("%v%v", ARGS_MSG, configTxUsage))
+	}
+
+	tx, err := protocol.ConstrConfigTx(
+		byte(header),
+		uint8(id),
+		uint64(payload),
+		uint64(fee),
+		uint8(txCnt),
+		&privKey,
+	)
+
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("%v%v", ARGS_MSG, configTxUsage))
+	}
+
+	if tx == nil {
+		return nil, errors.New(fmt.Sprintf("Transaction encoding failed.%v", configTxUsage))
+	}
+
+	return tx, nil
+}
+
 func parseFundsTx(args []string) (protocol.Transaction, error) {
 	fundsTxUsage := "\nUsage: bazo_client fundsTx <header> <amount> <fee> <txCnt> <fromHash> <toHash> <privKey>"
 
@@ -149,71 +206,12 @@ func parseFundsTx(args []string) (protocol.Transaction, error) {
 		&privKey,
 	)
 
-	fmt.Printf("%x")
-
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, fundsTxUsage))
 	}
 
 	if tx == nil {
 		return nil, errors.New(fmt.Sprintf("Transaction encoding failed.%v", fundsTxUsage))
-	}
-
-	return tx, nil
-}
-
-func parseConfigTx(args []string) (protocol.Transaction, error) {
-	configTxUsage := "\nUsage: bazo_client configTx <header> <id> <payload> <fee> <txCnt> <privKey>"
-
-	if len(args) != 6 {
-		return nil, errors.New(fmt.Sprintf("%v%v", ARGS_MSG, configTxUsage))
-	}
-
-	header, err := strconv.Atoi(args[0])
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v%v", ARGS_MSG, configTxUsage))
-	}
-
-	id, err := strconv.Atoi(args[1])
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v%v", ARGS_MSG, configTxUsage))
-	}
-
-	payload, err := strconv.Atoi(args[2])
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v%v", ARGS_MSG, configTxUsage))
-	}
-
-	fee, err := strconv.Atoi(args[3])
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v%v", ARGS_MSG, configTxUsage))
-	}
-
-	txCnt, err := strconv.Atoi(args[4])
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v%v", ARGS_MSG, configTxUsage))
-	}
-
-	_, privKey, err := extractKeyFromFile(args[5])
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v%v", ARGS_MSG, configTxUsage))
-	}
-
-	tx, err := protocol.ConstrConfigTx(
-		byte(header),
-		uint8(id),
-		uint64(payload),
-		uint64(fee),
-		uint8(txCnt),
-		&privKey,
-	)
-
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v%v", ARGS_MSG, configTxUsage))
-	}
-
-	if tx == nil {
-		return nil, errors.New(fmt.Sprintf("Transaction encoding failed.%v", configTxUsage))
 	}
 
 	return tx, nil
