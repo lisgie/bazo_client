@@ -48,7 +48,7 @@ func State(keyFile string) {
 
 			logger.Println(acc.String())
 
-			//time.Sleep(20 * time.Second)
+			time.Sleep(20 * time.Second)
 		}
 	}
 }
