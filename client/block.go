@@ -21,7 +21,7 @@ func validateMerkleRoot(block *protocol.Block) error {
 	}
 
 	if block.MerkleRoot != miner.BuildMerkleTree(txHashSlice) {
-		return errors.New(fmt.Sprintf("Block %x cannot be validated: Expected Merkle root cannot be recalculated.\n"))
+		return errors.New(fmt.Sprintf("Block %x cannot be validated: Expected Merkle root cannot be recalculated.\n", block.Hash))
 	}
 
 	return nil
