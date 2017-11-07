@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"github.com/mchetelat/bazo_miner/p2p"
 	"github.com/mchetelat/bazo_miner/protocol"
+	"log"
 	"os"
+	"time"
 )
 
 var (
@@ -14,13 +16,18 @@ var (
 	pubKey     [64]byte
 	pubKeyHash [32]byte
 	tx         protocol.Transaction
+	logger     *log.Logger
 )
 
 const (
 	USAGE_MSG = "Usage: bazo_client [pubKey|accTx|fundsTx|configTx] ...\n"
 )
 
-func Init(keyFile string) {
+func Init() {
+	logger = log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
+}
+
+func State(keyFile string) {
 	pubKey, pubKeyHash, err = getKeys(keyFile)
 	if err != nil {
 		fmt.Printf("%v\n%v", err, USAGE_MSG)
@@ -39,7 +46,7 @@ func Init(keyFile string) {
 				break
 			}
 
-			fmt.Println(acc.String())
+			logger.Println(acc.String())
 
 			//time.Sleep(20 * time.Second)
 		}
