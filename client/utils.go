@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"github.com/mchetelat/bazo_miner/p2p"
 	"golang.org/x/crypto/sha3"
+	"log"
 	"math/big"
 	"net"
 	"os"
@@ -19,11 +20,11 @@ import (
 
 func Connect(connectionString string) (conn net.Conn) {
 	conn, err := net.Dial("tcp", connectionString)
-	conn.SetDeadline(time.Now().Add(20 * time.Second))
 	if err != nil {
-		fmt.Printf("%v\n", err)
-		return
+		log.Fatal(err)
 	}
+
+	conn.SetDeadline(time.Now().Add(20 * time.Second))
 
 	return conn
 }

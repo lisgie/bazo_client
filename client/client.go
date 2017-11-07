@@ -4,14 +4,11 @@ import (
 	"fmt"
 	"github.com/mchetelat/bazo_miner/p2p"
 	"github.com/mchetelat/bazo_miner/protocol"
-	"net"
 	"os"
-	"time"
 )
 
 var (
 	acc        protocol.Account
-	conn       net.Conn
 	err        error
 	msgType    uint8
 	pubKey     [64]byte
@@ -34,8 +31,6 @@ func Init(keyFile string) {
 		acc.Address = pubKey
 
 		for {
-			conn = Connect(p2p.BOOTSTRAP_SERVER)
-
 			acc.Balance = 0
 
 			err := getAccState()
@@ -46,9 +41,7 @@ func Init(keyFile string) {
 
 			fmt.Println(acc.String())
 
-			conn.Close()
-
-			time.Sleep(time.Minute)
+			//time.Sleep(20 * time.Second)
 		}
 	}
 }

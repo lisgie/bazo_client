@@ -8,6 +8,8 @@ import (
 
 func requestBlock(blockHash [32]byte) (block *protocol.Block) {
 
+	conn := Connect(p2p.BOOTSTRAP_SERVER)
+
 	packet := p2p.BuildPacket(p2p.BLOCK_REQ, blockHash[:])
 	conn.Write(packet)
 
@@ -21,10 +23,14 @@ func requestBlock(blockHash [32]byte) (block *protocol.Block) {
 		block = block.Decode(payload)
 	}
 
+	conn.Close()
+
 	return block
 }
 
 func requestTx(txType uint8, txHash [32]byte) (tx protocol.Transaction) {
+
+	conn := Connect(p2p.BOOTSTRAP_SERVER)
 
 	packet := p2p.BuildPacket(txType, txHash[:])
 	conn.Write(packet)
@@ -46,10 +52,14 @@ func requestTx(txType uint8, txHash [32]byte) (tx protocol.Transaction) {
 		tx = fundsTx
 	}
 
+	conn.Close()
+
 	return tx
 }
 
 func requestSPVHeader(blockHash []byte) (spvHeader *protocol.SPVHeader) {
+
+	conn := Connect(p2p.BOOTSTRAP_SERVER)
 
 	packet := p2p.BuildPacket(p2p.BLOCK_HEADER_REQ, blockHash)
 	conn.Write(packet)
@@ -63,6 +73,8 @@ func requestSPVHeader(blockHash []byte) (spvHeader *protocol.SPVHeader) {
 	if header.TypeID == p2p.BlOCK_HEADER_RES {
 		spvHeader = spvHeader.SPVDecode(payload)
 	}
+
+	conn.Close()
 
 	return spvHeader
 }
