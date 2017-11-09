@@ -47,7 +47,11 @@ func State(keyFile string) {
 				break
 			}
 
-			logger.Println(acc.String())
+			if acc_created {
+				logger.Println(acc.String())
+			} else {
+				logger.Println("Account does not exist.")
+			}
 
 			time.Sleep(20 * time.Second)
 		}

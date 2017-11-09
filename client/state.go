@@ -13,6 +13,16 @@ func getAccState() error {
 			return err
 		}
 
+		if !acc_created {
+			for _, txHash := range block.AccTxData {
+				tx := requestTx(p2p.ACCTX_REQ, txHash)
+				accTx := tx.(*protocol.AccTx)
+				if accTx.PubKey == acc.Address {
+					acc_created = true
+				}
+			}
+		}
+
 		for _, txHash := range block.FundsTxData {
 			tx := requestTx(p2p.FUNDSTX_REQ, txHash)
 			fundsTx := tx.(*protocol.FundsTx)
