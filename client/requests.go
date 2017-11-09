@@ -42,7 +42,7 @@ func requestTx(txType uint8, txHash [32]byte) (tx protocol.Transaction) {
 	}
 
 	switch header.TypeID {
-	case p2p.ACC_RES:
+	case p2p.ACCTX_RES:
 		var accTx *protocol.AccTx
 		accTx = accTx.Decode(payload)
 		tx = accTx
