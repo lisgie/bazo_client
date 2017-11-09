@@ -26,7 +26,12 @@ func getAccState() error {
 		for _, txHash := range block.FundsTxData {
 			tx := requestTx(p2p.FUNDSTX_REQ, txHash)
 			fundsTx := tx.(*protocol.FundsTx)
-			acc.Balance += fundsTx.Amount
+			if fundsTx.From == pubKeyHash {
+				acc.Balance -= fundsTx.Amount
+				acc.Balance -= fundsTx.Fee
+			} else if fundsTx.To == pubKeyHash {
+				acc.Balance += fundsTx.Amount
+			}
 		}
 	}
 
