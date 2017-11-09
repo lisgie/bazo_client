@@ -10,13 +10,14 @@ import (
 )
 
 var (
-	acc        protocol.Account
-	err        error
-	msgType    uint8
-	pubKey     [64]byte
-	pubKeyHash [32]byte
-	tx         protocol.Transaction
-	logger     *log.Logger
+	acc         protocol.Account
+	acc_created = false
+	err         error
+	msgType     uint8
+	pubKey      [64]byte
+	pubKeyHash  [32]byte
+	tx          protocol.Transaction
+	logger      *log.Logger
 )
 
 const (
