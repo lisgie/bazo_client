@@ -93,7 +93,7 @@ func Process(args []string) {
 	}
 
 	if header != nil && header.TypeID == p2p.TX_BRDCST_ACK {
-		fmt.Printf("Successfully sent the following tansaction:\n%v", tx)
+		fmt.Printf("Successfully sent the following tansaction:%v", tx)
 	}
 
 	conn.Close()
