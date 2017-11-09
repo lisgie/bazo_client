@@ -4,3 +4,4 @@ log*
 *.db
 *.out
 *.txt
+coverage.html
