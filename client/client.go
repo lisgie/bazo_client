@@ -38,6 +38,8 @@ func State(keyFile string) {
 
 		acc.Address = pubKey
 
+		acc_created = isInitRoot()
+
 		for {
 			acc.Balance = 0
 

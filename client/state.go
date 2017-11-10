@@ -6,6 +6,9 @@ import (
 )
 
 func getAccState() error {
+	var collectedFees uint64
+
+	//The relevant blocks are ordered by age (desc)
 	for _, block := range getRelevantBlocks() {
 
 		err := validateMerkleRoot(block)
@@ -13,27 +16,34 @@ func getAccState() error {
 			return err
 		}
 
-		if !acc_created {
-			for _, txHash := range block.AccTxData {
-				tx := requestTx(p2p.ACCTX_REQ, txHash)
-				accTx := tx.(*protocol.AccTx)
-				if accTx.PubKey == acc.Address {
-					acc_created = true
-				}
+		for _, txHash := range block.AccTxData {
+			tx := requestTx(p2p.ACCTX_REQ, txHash)
+			accTx := tx.(*protocol.AccTx)
+
+			if accTx.PubKey == acc.Address {
+				acc_created = true
 			}
+
+			collectedFees += accTx.Fee
+
 		}
 
 		for _, txHash := range block.FundsTxData {
 			tx := requestTx(p2p.FUNDSTX_REQ, txHash)
 			fundsTx := tx.(*protocol.FundsTx)
+
 			if fundsTx.From == pubKeyHash {
 				acc.Balance -= fundsTx.Amount
 				acc.Balance -= fundsTx.Fee
 			} else if fundsTx.To == pubKeyHash {
 				acc.Balance += fundsTx.Amount
 			}
+
+			collectedFees += fundsTx.Fee
 		}
 	}
+
+	acc.Balance += collectedFees
 
 	return nil
 }

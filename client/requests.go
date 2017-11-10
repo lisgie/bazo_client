@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/mchetelat/bazo_miner/p2p"
 	"github.com/mchetelat/bazo_miner/protocol"
+	"github.com/mchetelat/bazo_miner/storage"
 )
 
 func requestBlock(blockHash [32]byte) (block *protocol.Block) {
@@ -77,4 +78,29 @@ func requestSPVHeader(blockHash []byte) (spvHeader *protocol.SPVHeader) {
 	conn.Close()
 
 	return spvHeader
+}
+
+//Check if our address is the initial root account, since for it no accTx exists
+func isInitRoot() (ret bool) {
+	ret = false
+	conn := Connect(p2p.BOOTSTRAP_SERVER)
+
+	packet := p2p.BuildPacket(p2p.INITROOT_REQ, pubKey[:])
+	conn.Write(packet)
+
+	header, payload, err := rcvData(conn)
+	if err != nil {
+		fmt.Printf("Disconnected: %v\n", err)
+		return
+	}
+
+	if header.TypeID == p2p.INITROOT_RES {
+		if payload[0] == 1 {
+			ret = true
+		}
+	}
+
+	conn.Close()
+
+	return ret
 }
