@@ -68,7 +68,8 @@ func parseAccTx(args []string) (protocol.Transaction, error) {
 }
 
 func parseConfigTx(args []string) (protocol.Transaction, error) {
-	configTxUsage := "\nUsage: bazo_client configTx <header> <id> <payload> <fee> <txCnt> <privKey>"
+	options := "\nOptions: <id> <payload [format]>\n 1 block size [bytes]\n 2 difficulty interval [#blocks]\n 3 minimum fee [bazo coins]\n 4 block interval [sec]\n 5 block reward [bazo coins]"
+	configTxUsage := "\nUsage: bazo_client configTx <header> <id> <payload> <fee> <txCnt> <privKey>" + options
 
 	if len(args) != 6 {
 		return nil, errors.New(fmt.Sprintf("%v%v", ARGS_MSG, configTxUsage))
