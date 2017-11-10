@@ -88,7 +88,7 @@ func Process(args []string) {
 
 	header, _, err := rcvData(conn)
 	if err != nil {
-		fmt.Printf("Disconnected: %v\n", err)
+		fmt.Printf("Could not send the following transaction: %x", tx.Hash())
 		return
 	}
 
