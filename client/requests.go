@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/mchetelat/bazo_miner/p2p"
 	"github.com/mchetelat/bazo_miner/protocol"
-	"github.com/mchetelat/bazo_miner/storage"
 )
 
 func requestBlock(blockHash [32]byte) (block *protocol.Block) {
@@ -47,6 +46,10 @@ func requestTx(txType uint8, txHash [32]byte) (tx protocol.Transaction) {
 		var accTx *protocol.AccTx
 		accTx = accTx.Decode(payload)
 		tx = accTx
+	case p2p.CONFIGTX_RES:
+		var configTx *protocol.ConfigTx
+		configTx = configTx.Decode(payload)
+		tx = configTx
 	case p2p.FUNDSTX_RES:
 		var fundsTx *protocol.FundsTx
 		fundsTx = fundsTx.Decode(payload)
