@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	"github.com/mchetelat/bazo_miner/miner"
 	"github.com/mchetelat/bazo_miner/p2p"
 	"github.com/mchetelat/bazo_miner/protocol"
 	"log"
@@ -10,14 +11,15 @@ import (
 )
 
 var (
-	acc         protocol.Account
-	acc_created = false
-	err         error
-	msgType     uint8
-	pubKey      [64]byte
-	pubKeyHash  [32]byte
-	tx          protocol.Transaction
-	logger      *log.Logger
+	acc          protocol.Account
+	err          error
+	isAccCreated = false
+	isAccRoot    = false
+	msgType      uint8
+	pubKey       [64]byte
+	pubKeyHash   [32]byte
+	tx           protocol.Transaction
+	logger       *log.Logger
 )
 
 const (
@@ -38,10 +40,12 @@ func State(keyFile string) {
 
 		acc.Address = pubKey
 
-		acc_created = isInitRoot()
+		isAccRoot = isInitRoot()
+		isAccCreated = isAccRoot
 
 		for {
 			acc.Balance = 0
+			parameters = miner.NewDefaultParameters()
 
 			err := getAccState()
 			if err != nil {
@@ -49,7 +53,7 @@ func State(keyFile string) {
 				break
 			}
 
-			if acc_created {
+			if isAccCreated {
 				logger.Println(acc.String())
 			} else {
 				logger.Println("Account does not exist.")
