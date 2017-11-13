@@ -77,32 +77,32 @@ func parseConfigTx(args []string) (protocol.Transaction, error) {
 
 	header, err := strconv.Atoi(args[0])
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v%v", ARGS_MSG, configTxUsage))
+		return nil, errors.New(fmt.Sprintf("%v%v", err, configTxUsage))
 	}
 
 	id, err := strconv.Atoi(args[1])
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v%v", ARGS_MSG, configTxUsage))
+		return nil, errors.New(fmt.Sprintf("%v%v", err, configTxUsage))
 	}
 
 	payload, err := strconv.Atoi(args[2])
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v%v", ARGS_MSG, configTxUsage))
+		return nil, errors.New(fmt.Sprintf("%v%v", err, configTxUsage))
 	}
 
 	fee, err := strconv.Atoi(args[3])
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v%v", ARGS_MSG, configTxUsage))
+		return nil, errors.New(fmt.Sprintf("%v%v", err, configTxUsage))
 	}
 
 	txCnt, err := strconv.Atoi(args[4])
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v%v", ARGS_MSG, configTxUsage))
+		return nil, errors.New(fmt.Sprintf("%v%v", err, configTxUsage))
 	}
 
 	_, privKey, err := extractKeyFromFile(args[5])
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v%v", ARGS_MSG, configTxUsage))
+		return nil, errors.New(fmt.Sprintf("%v%v", err, configTxUsage))
 	}
 
 	tx, err := protocol.ConstrConfigTx(
@@ -115,7 +115,7 @@ func parseConfigTx(args []string) (protocol.Transaction, error) {
 	)
 
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v%v", ARGS_MSG, configTxUsage))
+		return nil, errors.New(fmt.Sprintf("%v%v", err, configTxUsage))
 	}
 
 	if tx == nil {
