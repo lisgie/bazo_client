@@ -37,8 +37,11 @@ func getAccState() error {
 			tx := requestTx(p2p.ACCTX_REQ, txHash)
 			accTx := tx.(*protocol.AccTx)
 
-			if accTx.PubKey == acc.Address {
-				isAccCreated = true
+			if accTx.PubKey == pubKey {
+				acc.Address = pubKey
+				if rootAcc := reqRootAccFromHash(pubKeyHash); rootAcc != nil {
+					isRootAcc = true
+				}
 			}
 
 			if block.Beneficiary == pubKeyHash {
@@ -46,11 +49,12 @@ func getAccState() error {
 			}
 		}
 
-		//Update parameters and collect fee
+		//Update config parameters and collect fee
 		for _, txHash := range block.ConfigTxData {
 			tx := requestTx(p2p.CONFIGTX_REQ, txHash)
 			configTx := tx.(*protocol.ConfigTx)
 			configTxSlice := []*protocol.ConfigTx{configTx}
+
 			if block.Beneficiary == pubKeyHash {
 				acc.Balance += configTx.Fee
 			}
@@ -62,9 +66,8 @@ func getAccState() error {
 		for _, txHash := range block.FundsTxData {
 			tx := requestTx(p2p.FUNDSTX_REQ, txHash)
 			fundsTx := tx.(*protocol.FundsTx)
-
-			//TODO: isAccRoot must reflect not only initRoot but all roots
-			if isAccRoot == false {
+			//If acc is no root, balance funds
+			if !isRootAcc {
 				if fundsTx.From == pubKeyHash {
 					acc.Balance -= fundsTx.Amount
 					acc.Balance -= fundsTx.Fee

@@ -1,7 +1,6 @@
 package client
 
 import (
-	"fmt"
 	"github.com/mchetelat/bazo_miner/p2p"
 	"github.com/mchetelat/bazo_miner/protocol"
 )
@@ -15,7 +14,7 @@ func requestBlock(blockHash [32]byte) (block *protocol.Block) {
 
 	header, payload, err := rcvData(conn)
 	if err != nil {
-		fmt.Printf("Disconnected: %v\n", err)
+		logger.Printf("Disconnected: %v\n", err)
 		return
 	}
 
@@ -37,7 +36,7 @@ func requestTx(txType uint8, txHash [32]byte) (tx protocol.Transaction) {
 
 	header, payload, err := rcvData(conn)
 	if err != nil {
-		fmt.Printf("Disconnected: %v\n", err)
+		logger.Printf("Disconnected: %v\n", err)
 		return
 	}
 
@@ -70,7 +69,7 @@ func requestSPVHeader(blockHash []byte) (spvHeader *protocol.SPVHeader) {
 
 	header, payload, err := rcvData(conn)
 	if err != nil {
-		fmt.Printf("Disconnected: %v\n", err)
+		logger.Printf("Disconnected: %v\n", err)
 		return
 	}
 
@@ -84,26 +83,23 @@ func requestSPVHeader(blockHash []byte) (spvHeader *protocol.SPVHeader) {
 }
 
 //Check if our address is the initial root account, since for it no accTx exists
-func isInitRoot() (ret bool) {
-	ret = false
+func reqRootAccFromHash(hash [32]byte) (rootAcc *protocol.Account) {
 	conn := Connect(p2p.BOOTSTRAP_SERVER)
 
-	packet := p2p.BuildPacket(p2p.INITROOT_REQ, pubKey[:])
+	packet := p2p.BuildPacket(p2p.ROOTACC_REQ, hash[:])
 	conn.Write(packet)
 
 	header, payload, err := rcvData(conn)
 	if err != nil {
-		fmt.Printf("Disconnected: %v\n", err)
-		return
+		logger.Printf("Disconnected: %v\n", err)
+		return nil
 	}
 
-	if header.TypeID == p2p.INITROOT_RES {
-		if payload[0] == 1 {
-			ret = true
-		}
+	if header.TypeID == p2p.ROOTACC_RES {
+		rootAcc = rootAcc.Decode(payload)
 	}
 
 	conn.Close()
 
-	return ret
+	return rootAcc
 }

@@ -11,15 +11,14 @@ import (
 )
 
 var (
-	acc          protocol.Account
-	err          error
-	isAccCreated = false
-	isAccRoot    = false
-	msgType      uint8
-	pubKey       [64]byte
-	pubKeyHash   [32]byte
-	tx           protocol.Transaction
-	logger       *log.Logger
+	acc        protocol.Account
+	err        error
+	isRootAcc  = false
+	msgType    uint8
+	pubKey     [64]byte
+	pubKeyHash [32]byte
+	tx         protocol.Transaction
+	logger     *log.Logger
 )
 
 const (
@@ -35,17 +34,19 @@ func State(keyFile string) {
 	if err != nil {
 		fmt.Printf("%v\n%v", err, USAGE_MSG)
 	} else {
-		fmt.Printf("My Public Key: %x\n", pubKey)
-		fmt.Printf("My Public Key(Hash): %x\n", pubKeyHash)
-
-		acc.Address = pubKey
-
-		isAccRoot = isInitRoot()
-		isAccCreated = isAccRoot
+		fmt.Printf("My address: %x\n", pubKey)
+		fmt.Printf("My address hash: %x\n", pubKeyHash)
 
 		for {
-			acc.Balance = 0
+			//Initialize new account with empty address
+			acc = protocol.Account{}
+			//Set default params
 			parameters = miner.NewDefaultParameters()
+
+			if rootAcc := reqRootAccFromHash(pubKeyHash); rootAcc != nil {
+				acc.Address = pubKey
+				isRootAcc = true
+			}
 
 			err := getAccState()
 			if err != nil {
@@ -53,7 +54,7 @@ func State(keyFile string) {
 				break
 			}
 
-			if isAccCreated {
+			if acc.Address != [64]byte{} {
 				logger.Println(acc.String())
 			} else {
 				logger.Println("Account does not exist.")
