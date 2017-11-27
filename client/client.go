@@ -31,7 +31,12 @@ func State(keyFile string) {
 		fmt.Printf("My address: %x\n", pubKey)
 
 		initState()
-		getAccState(pubKey)
+		acc, err := getAccState(pubKey)
+		if err != nil {
+			logger.Println(err)
+		}
+
+		logger.Printf(acc.String())
 	}
 }
 
