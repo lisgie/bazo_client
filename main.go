@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/mchetelat/bazo_client/client"
 	"os"
+	"github.com/mchetelat/bazo_client/REST"
 )
 
 func main() {
@@ -19,4 +20,6 @@ func main() {
 	} else {
 		fmt.Printf("%v\n", client.USAGE_MSG)
 	}
+
+	REST.Init()
 }
