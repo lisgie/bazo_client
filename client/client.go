@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	"github.com/mchetelat/bazo_miner/miner"
 	"github.com/mchetelat/bazo_miner/p2p"
 	"github.com/mchetelat/bazo_miner/protocol"
 	"log"
@@ -21,6 +22,9 @@ const (
 
 func Init() {
 	logger = log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
+
+	loadAllBlockHeaders()
+	allBockHeaders = miner.InvertSPVHeaderSlice(allBockHeaders)
 }
 
 func State(keyFile string) {
@@ -30,7 +34,6 @@ func State(keyFile string) {
 	} else {
 		fmt.Printf("My address: %x\n", pubKey)
 
-		initState()
 		acc, err := GetAccount(pubKey)
 		if err != nil {
 			logger.Println(err)

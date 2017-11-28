@@ -19,7 +19,7 @@ func main() {
 		}
 	} else {
 		fmt.Printf("%v\n", client.USAGE_MSG)
+		fmt.Println("REST INTERFACE STARTED")
+		REST.Init()
 	}
-
-	REST.Init()
 }

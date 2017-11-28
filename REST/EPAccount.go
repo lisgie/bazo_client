@@ -19,6 +19,6 @@ func GetAccountEndpoint(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		json.NewEncoder(w).Encode(err.Error())
 	} else {
-		json.NewEncoder(w).Encode(acc)
+		json.NewEncoder(w).Encode(acc.String())
 	}
 }
