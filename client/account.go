@@ -24,7 +24,7 @@ func GetAccount(pubKey [64]byte) (*Account, error) {
 	parameters = miner.NewDefaultParameters()
 
 	//If Acc is Root in the bazo network state, we do not check for accTx, else we check
-	if rootAcc := reqRootAccFromHash(serializeHashContent(acc.Address)); rootAcc != nil {
+	if rootAcc := reqRootAccFromHash(SerializeHashContent(acc.Address)); rootAcc != nil {
 		acc.isCreated, acc.isRoot = true, true
 	} else {
 		if acc.isCreated, _ = isAccCreated(&acc); acc.isCreated == false {
@@ -41,6 +41,6 @@ func GetAccount(pubKey [64]byte) (*Account, error) {
 }
 
 func (acc Account) String() string {
-	addressHash := serializeHashContent(acc.Address)
+	addressHash := SerializeHashContent(acc.Address)
 	return fmt.Sprintf("Hash: %x, Address: %x, TxCnt: %v, Balance: %v, isCreated: %v, isRoot: %v", addressHash[:8], acc.Address[:8], acc.TxCnt, acc.Balance, acc.isCreated, acc.isRoot)
 }

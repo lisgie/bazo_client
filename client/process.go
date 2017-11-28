@@ -202,8 +202,8 @@ func parseFundsTx(args []string) (protocol.Transaction, error) {
 		uint64(amount),
 		uint64(fee),
 		uint32(txCnt),
-		serializeHashContent(fromPubKey[:]),
-		serializeHashContent(toPubKey[:]),
+		SerializeHashContent(fromPubKey[:]),
+		SerializeHashContent(toPubKey[:]),
 		&privKey,
 	)
 

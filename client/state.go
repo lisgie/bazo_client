@@ -37,7 +37,7 @@ func isAccCreated(acc *Account) (bool, error) {
 }
 
 func getBalance(acc *Account) (balance uint64, err error) {
-	pubKeyHash := serializeHashContent(acc.Address)
+	pubKeyHash := SerializeHashContent(acc.Address)
 
 	//Get blocks if the Acc address:
 	//* issued an Acc
@@ -53,7 +53,7 @@ func getBalance(acc *Account) (balance uint64, err error) {
 
 	for _, block := range relevantBlocks {
 		//Collect block reward
-		if block.Beneficiary == serializeHashContent(acc.Address) {
+		if block.Beneficiary == SerializeHashContent(acc.Address) {
 			balance += parameters.Block_reward
 		}
 
@@ -120,7 +120,7 @@ func getRelevantBlocks(pubKey [64]byte) (relevantBlocks []*protocol.Block, err e
 }
 
 func getRelevantBlockHashes(pubKey [64]byte) (relevantBlockHashes [][32]byte) {
-	pubKeyHash := serializeHashContent(pubKey)
+	pubKeyHash := SerializeHashContent(pubKey)
 	for _, spvHeader := range allBockHeaders {
 		if spvHeader.BloomFilter.Test(pubKeyHash[:]) || spvHeader.Beneficiary == pubKeyHash || spvHeader.NrConfigTx > 0 {
 			relevantBlockHashes = append(relevantBlockHashes, spvHeader.Hash)

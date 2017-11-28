@@ -72,7 +72,7 @@ func extractKeyFromFile(filename string) (pubKey ecdsa.PublicKey, privKey ecdsa.
 	return pubKey, privKey, nil
 }
 
-func serializeHashContent(data interface{}) (hash [32]byte) {
+func SerializeHashContent(data interface{}) (hash [32]byte) {
 
 	var buf bytes.Buffer
 	binary.Write(&buf, binary.BigEndian, data)
@@ -97,7 +97,7 @@ func getKeys(keyFile string) (myPubKey [64]byte, myPubKeyHash [32]byte, err erro
 	copy(myPubKey[0:32], pub1Int.Bytes())
 	copy(myPubKey[32:64], pub2Int.Bytes())
 
-	myPubKeyHash = serializeHashContent(myPubKey)
+	myPubKeyHash = SerializeHashContent(myPubKey)
 
 	return myPubKey, myPubKeyHash, err
 }

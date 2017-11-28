@@ -1,6 +1,7 @@
 package client
 
 import (
+	"fmt"
 	"github.com/mchetelat/bazo_miner/p2p"
 	"github.com/mchetelat/bazo_miner/protocol"
 )
@@ -102,4 +103,25 @@ func reqRootAccFromHash(hash [32]byte) (rootAcc *protocol.Account) {
 	conn.Close()
 
 	return rootAcc
+}
+
+func SendTx(tx protocol.Transaction, typeID uint8) {
+	//Transaction creation successful
+	packet := p2p.BuildPacket(typeID, tx.Encode())
+
+	//Open a connection
+	conn := Connect(p2p.BOOTSTRAP_SERVER)
+	conn.Write(packet)
+
+	header, _, err := rcvData(conn)
+	if err != nil {
+		fmt.Printf("Could not send the following transaction: %x", tx.Hash())
+		return
+	}
+
+	if header != nil && header.TypeID == p2p.TX_BRDCST_ACK {
+		fmt.Printf("Successfully sent the following tansaction:%v", tx)
+	}
+
+	conn.Close()
 }
