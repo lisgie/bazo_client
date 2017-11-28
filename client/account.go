@@ -42,5 +42,5 @@ func GetAccount(pubKey [64]byte) (*Account, error) {
 
 func (acc Account) String() string {
 	addressHash := serializeHashContent(acc.Address)
-	return fmt.Sprintf("Hash: %x, Address: %x, TxCnt: %v, Balance: %v, isCreated: %v, isRoot: %v", addressHash[:12], acc.Address[0:8], acc.TxCnt, acc.Balance, acc.isCreated, acc.isRoot)
+	return fmt.Sprintf("Hash: %x, Address: %x, TxCnt: %v, Balance: %v, isCreated: %v, isRoot: %v", addressHash[:8], acc.Address[:8], acc.TxCnt, acc.Balance, acc.isCreated, acc.isRoot)
 }
