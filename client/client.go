@@ -9,10 +9,10 @@ import (
 )
 
 var (
-	err        error
-	msgType    uint8
-	tx         protocol.Transaction
-	logger     *log.Logger
+	err     error
+	msgType uint8
+	tx      protocol.Transaction
+	logger  *log.Logger
 )
 
 const (
@@ -24,19 +24,19 @@ func Init() {
 }
 
 func State(keyFile string) {
-	pubKey, _ , err := getKeys(keyFile)
+	pubKey, _, err := getKeys(keyFile)
 	if err != nil {
 		fmt.Printf("%v\n%v", err, USAGE_MSG)
 	} else {
 		fmt.Printf("My address: %x\n", pubKey)
 
 		initState()
-		acc, err := getAccState(pubKey)
+		acc, err := GetAccount(pubKey)
 		if err != nil {
 			logger.Println(err)
+		} else {
+			logger.Printf(acc.String())
 		}
-
-		logger.Printf(acc.String())
 	}
 }
 

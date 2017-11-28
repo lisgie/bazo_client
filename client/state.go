@@ -1,13 +1,9 @@
 package client
 
 import (
-	"encoding/hex"
-	"errors"
-	"fmt"
 	"github.com/mchetelat/bazo_miner/miner"
 	"github.com/mchetelat/bazo_miner/p2p"
 	"github.com/mchetelat/bazo_miner/protocol"
-	"time"
 )
 
 var (
@@ -19,30 +15,6 @@ var (
 func initState() {
 	loadAllBlockHeaders()
 	allBockHeaders = miner.InvertSPVHeaderSlice(allBockHeaders)
-}
-
-func getAccState(pubKey [64]byte) (*Account, error) {
-	//Initialize new account with empty address
-	acc := Account{pubKey, hex.EncodeToString(pubKey[:]), 0, 0, false, false}
-
-	//Set default params
-	parameters = miner.NewDefaultParameters()
-
-	acc.isCreated, _ = isAccCreated(&acc)
-	if acc.isCreated == false {
-		return nil, errors.New(fmt.Sprintf("Account %x has not yet been created.\n", acc.Address))
-	}
-
-	if rootAcc := reqRootAccFromHash(serializeHashContent(acc.Address)); rootAcc != nil {
-		acc.isRoot = true
-	}
-
-	acc.Balance, err = getBalance(&acc)
-	if err != nil {
-		return &acc, errors.New(fmt.Sprintf("Could not calculate account (%x) balance: %v\n", acc.Address, err))
-	}
-
-	return &acc, nil
 }
 
 func isAccCreated(acc *Account) (bool, error) {

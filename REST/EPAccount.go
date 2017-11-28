@@ -1,29 +1,24 @@
 package REST
 
 import (
-	"net/http"
-	"encoding/hex"
 	"encoding/json"
-	"github.com/mchetelat/bazo_client/client"
 	"github.com/gorilla/mux"
-	"fmt"
+	"github.com/mchetelat/bazo_client/client"
+	"math/big"
+	"net/http"
 )
-
-type FormattedAcc struct {
-	Address string
-	TxCnt uint32
-	Balance uint64
-}
 
 func GetAccountEndpoint(w http.ResponseWriter, req *http.Request) {
 	params := mux.Vars(req)
-	fmt.Println(params["id"])
 
-	var formattedAcc FormattedAcc
+	var pubKey [64]byte
+	pubKeyInt, _ := new(big.Int).SetString(params["id"], 16)
+	copy(pubKey[:], pubKeyInt.Bytes())
 
-	formattedAcc.Address = hex.EncodeToString(client.Acc.Address[:])
-	formattedAcc.TxCnt = client.Acc.TxCnt
-	formattedAcc.Balance = client.Acc.Balance
-
-	json.NewEncoder(w).Encode(formattedAcc)
+	acc, err := client.GetAccount(pubKey)
+	if err != nil {
+		json.NewEncoder(w).Encode(err.Error())
+	} else {
+		json.NewEncoder(w).Encode(acc)
+	}
 }
