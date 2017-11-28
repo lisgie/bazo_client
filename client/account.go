@@ -1,10 +1,10 @@
 package client
 
 import (
-	"fmt"
 	"encoding/hex"
-	"github.com/mchetelat/bazo_miner/miner"
 	"errors"
+	"fmt"
+	"github.com/mchetelat/bazo_miner/miner"
 )
 
 type Account struct {

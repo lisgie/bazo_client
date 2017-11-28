@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/mchetelat/bazo_client/REST"
 	"github.com/mchetelat/bazo_client/client"
 	"os"
-	"github.com/mchetelat/bazo_client/REST"
 )
 
 func main() {
