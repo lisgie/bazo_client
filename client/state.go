@@ -25,7 +25,7 @@ func isAccCreated(acc *Account) (bool, error) {
 
 	for _, block := range relevantBlocks {
 		for _, txHash := range block.AccTxData {
-			tx := requestTx(p2p.ACCTX_REQ, txHash)
+			tx := reqTx(p2p.ACCTX_REQ, txHash)
 			AccTx := tx.(*protocol.AccTx)
 			if AccTx.PubKey == acc.Address {
 				return true, nil
@@ -59,7 +59,7 @@ func getBalance(acc *Account) (balance uint64, err error) {
 
 		//Check if Account was issued and collect fee
 		for _, txHash := range block.AccTxData {
-			tx := requestTx(p2p.ACCTX_REQ, txHash)
+			tx := reqTx(p2p.ACCTX_REQ, txHash)
 			AccTx := tx.(*protocol.AccTx)
 
 			if block.Beneficiary == pubKeyHash {
@@ -69,7 +69,7 @@ func getBalance(acc *Account) (balance uint64, err error) {
 
 		//Update config parameters and collect fee
 		for _, txHash := range block.ConfigTxData {
-			tx := requestTx(p2p.CONFIGTX_REQ, txHash)
+			tx := reqTx(p2p.CONFIGTX_REQ, txHash)
 			configTx := tx.(*protocol.ConfigTx)
 			configTxSlice := []*protocol.ConfigTx{configTx}
 
@@ -82,7 +82,7 @@ func getBalance(acc *Account) (balance uint64, err error) {
 
 		//Balance funds and collect fee
 		for _, txHash := range block.FundsTxData {
-			tx := requestTx(p2p.FUNDSTX_REQ, txHash)
+			tx := reqTx(p2p.FUNDSTX_REQ, txHash)
 			fundsTx := tx.(*protocol.FundsTx)
 			//If Acc is no root, balance funds
 			if !acc.isRoot {
@@ -105,7 +105,7 @@ func getBalance(acc *Account) (balance uint64, err error) {
 
 func getRelevantBlocks(pubKey [64]byte) (relevantBlocks []*protocol.Block, err error) {
 	for _, blockHash := range getRelevantBlockHashes(pubKey) {
-		block := requestBlock(blockHash)
+		block := reqBlock(blockHash)
 
 		//Validate block integrity
 		err := validateMerkleRoot(block)
@@ -131,12 +131,12 @@ func getRelevantBlockHashes(pubKey [64]byte) (relevantBlockHashes [][32]byte) {
 }
 
 func loadAllBlockHeaders() {
-	spvHeader := requestSPVHeader(nil)
+	spvHeader := reqSPVHeader(nil)
 	allBockHeaders = append(allBockHeaders, spvHeader)
 	prevHash := spvHeader.PrevHash
 
 	for spvHeader.Hash != [32]byte{} {
-		spvHeader = requestSPVHeader(prevHash[:])
+		spvHeader = reqSPVHeader(prevHash[:])
 		allBockHeaders = append(allBockHeaders, spvHeader)
 		prevHash = spvHeader.PrevHash
 	}

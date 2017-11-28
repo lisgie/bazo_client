@@ -5,7 +5,7 @@ import (
 	"github.com/mchetelat/bazo_miner/protocol"
 )
 
-func requestBlock(blockHash [32]byte) (block *protocol.Block) {
+func reqBlock(blockHash [32]byte) (block *protocol.Block) {
 
 	conn := Connect(p2p.BOOTSTRAP_SERVER)
 
@@ -27,7 +27,7 @@ func requestBlock(blockHash [32]byte) (block *protocol.Block) {
 	return block
 }
 
-func requestTx(txType uint8, txHash [32]byte) (tx protocol.Transaction) {
+func reqTx(txType uint8, txHash [32]byte) (tx protocol.Transaction) {
 
 	conn := Connect(p2p.BOOTSTRAP_SERVER)
 
@@ -60,7 +60,7 @@ func requestTx(txType uint8, txHash [32]byte) (tx protocol.Transaction) {
 	return tx
 }
 
-func requestSPVHeader(blockHash []byte) (spvHeader *protocol.SPVHeader) {
+func reqSPVHeader(blockHash []byte) (spvHeader *protocol.SPVHeader) {
 
 	conn := Connect(p2p.BOOTSTRAP_SERVER)
 
