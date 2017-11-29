@@ -85,13 +85,18 @@ func getBalance(acc *Account) (balance uint64, err error) {
 			tx := reqTx(p2p.FUNDSTX_REQ, txHash)
 			fundsTx := tx.(*protocol.FundsTx)
 			//If Acc is no root, balance funds
-			if !acc.isRoot {
-				if fundsTx.From == pubKeyHash {
+
+			if fundsTx.From == pubKeyHash {
+				if !acc.isRoot {
 					balance -= fundsTx.Amount
 					balance -= fundsTx.Fee
-				} else if fundsTx.To == pubKeyHash {
-					balance += fundsTx.Amount
 				}
+
+				acc.TxCnt += 1
+			}
+
+			if fundsTx.To == pubKeyHash {
+				balance += fundsTx.Amount
 			}
 
 			if block.Beneficiary == pubKeyHash {
