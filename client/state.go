@@ -7,14 +7,33 @@ import (
 )
 
 var (
-	//If miner code is not available, a network request must be implemented
 	parameters     = miner.NewDefaultParameters()
+	//All blockheaders of the whole chain
 	allBockHeaders []*protocol.SPVHeader
 )
 
+//Load initially all block headers and invert them (first oldest, last latest)
 func initState() {
 	loadAllBlockHeaders()
 	allBockHeaders = miner.InvertSPVHeaderSlice(allBockHeaders)
+}
+
+//Update allBlockHeaders to the latest header
+func refreshState() {
+	var newBlockHeaders []*protocol.SPVHeader
+	newBlockHeaders = getNewBlockHeaders(reqSPVHeader(nil), allBockHeaders[len(allBockHeaders)-1], newBlockHeaders)
+	allBockHeaders = append(allBockHeaders, newBlockHeaders...)
+}
+
+//Get new blockheaders recursively
+func getNewBlockHeaders(latest *protocol.SPVHeader, eldest *protocol.SPVHeader, list []*protocol.SPVHeader) []*protocol.SPVHeader {
+	if latest.Hash != eldest.Hash {
+		ancestor := reqSPVHeader(latest.PrevHash[:])
+		list = getNewBlockHeaders(ancestor, eldest, list)
+		list = append(list, latest)
+	}
+
+	return list
 }
 
 func isAccCreated(acc *Account) (bool, error) {
@@ -136,6 +155,7 @@ func getRelevantBlockHashes(pubKey [64]byte) (relevantBlockHashes [][32]byte) {
 }
 
 func loadAllBlockHeaders() {
+	//If no blockhash as param is defined, the last SPVHeader is given back
 	spvHeader := reqSPVHeader(nil)
 	allBockHeaders = append(allBockHeaders, spvHeader)
 	prevHash := spvHeader.PrevHash

@@ -9,14 +9,16 @@ import (
 
 type Account struct {
 	Address       [64]byte `json:"-"`
-	AddressString string `json:"Address"`
-	Balance       uint64 `json:"Balance"`
-	TxCnt         uint32 `json:"TxCnt"`
-	IsCreated     bool   `json:"IsCreated"`
-	IsRoot        bool   `json:"IsRoot"`
+	AddressString string   `json:"Address"`
+	Balance       uint64   `json:"Balance"`
+	TxCnt         uint32   `json:"TxCnt"`
+	IsCreated     bool     `json:"IsCreated"`
+	IsRoot        bool     `json:"IsRoot"`
 }
 
 func GetAccount(pubKey [64]byte) (*Account, error) {
+	refreshState()
+
 	//Initialize new account with empty address
 	acc := Account{pubKey, hex.EncodeToString(pubKey[:]), 0, 0, false, false}
 
