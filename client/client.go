@@ -28,7 +28,12 @@ func Init() {
 }
 
 func State(keyFile string) {
-	pubKey, _, err := getKeys(keyFile)
+	pubKeyTmp, _, err := extractKeyFromFile(keyFile)
+
+	var pubKey [64]byte
+	copy(pubKey[:32], pubKeyTmp.X.Bytes())
+	copy(pubKey[32:], pubKeyTmp.Y.Bytes())
+
 	if err != nil {
 		fmt.Printf("%v\n%v", err, USAGE_MSG)
 	} else {

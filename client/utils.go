@@ -79,29 +79,6 @@ func SerializeHashContent(data interface{}) (hash [32]byte) {
 	return sha3.Sum256(buf.Bytes())
 }
 
-func getKeys(keyFile string) (myPubKey [64]byte, myPubKeyHash [32]byte, err error) {
-	myKeys, err := os.Open(keyFile)
-	if err != nil {
-		return myPubKey, myPubKeyHash, err
-	}
-
-	reader := bufio.NewReader(myKeys)
-
-	//We only need the public key
-	pub1, _ := reader.ReadString('\n')
-	pub2, _ := reader.ReadString('\n')
-
-	pub1Int, _ := new(big.Int).SetString(strings.Split(pub1, "\n")[0], 16)
-	pub2Int, _ := new(big.Int).SetString(strings.Split(pub2, "\n")[0], 16)
-
-	copy(myPubKey[0:32], pub1Int.Bytes())
-	copy(myPubKey[32:64], pub2Int.Bytes())
-
-	myPubKeyHash = SerializeHashContent(myPubKey)
-
-	return myPubKey, myPubKeyHash, err
-}
-
 func rcvData(c net.Conn) (header *p2p.Header, payload []byte, err error) {
 	reader := bufio.NewReader(c)
 	header, err = p2p.ReadHeader(reader)

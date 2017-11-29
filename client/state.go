@@ -87,7 +87,7 @@ func getBalance(acc *Account) (balance uint64, err error) {
 			//If Acc is no root, balance funds
 
 			if fundsTx.From == pubKeyHash {
-				if !acc.isRoot {
+				if !acc.IsRoot {
 					balance -= fundsTx.Amount
 					balance -= fundsTx.Fee
 				}

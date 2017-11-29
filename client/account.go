@@ -8,12 +8,12 @@ import (
 )
 
 type Account struct {
-	Address       [64]byte
-	AddressString string
-	Balance       uint64
-	TxCnt         uint32
-	isCreated     bool
-	isRoot        bool
+	Address       [64]byte `json:"-"`
+	AddressString string `json:"Address"`
+	Balance       uint64 `json:"Balance"`
+	TxCnt         uint32 `json:"TxCnt"`
+	IsCreated     bool   `json:"IsCreated"`
+	IsRoot        bool   `json:"IsRoot"`
 }
 
 func GetAccount(pubKey [64]byte) (*Account, error) {
@@ -25,9 +25,9 @@ func GetAccount(pubKey [64]byte) (*Account, error) {
 
 	//If Acc is Root in the bazo network state, we do not check for accTx, else we check
 	if rootAcc := reqRootAccFromHash(SerializeHashContent(acc.Address)); rootAcc != nil {
-		acc.isCreated, acc.isRoot = true, true
+		acc.IsCreated, acc.IsRoot = true, true
 	} else {
-		if acc.isCreated, _ = isAccCreated(&acc); acc.isCreated == false {
+		if acc.IsCreated, _ = isAccCreated(&acc); acc.IsCreated == false {
 			return nil, errors.New(fmt.Sprintf("Account %x does not exist.\n", acc.Address[:8]))
 		}
 	}
@@ -42,5 +42,5 @@ func GetAccount(pubKey [64]byte) (*Account, error) {
 
 func (acc Account) String() string {
 	addressHash := SerializeHashContent(acc.Address)
-	return fmt.Sprintf("Hash: %x, Address: %x, TxCnt: %v, Balance: %v, isCreated: %v, isRoot: %v", addressHash[:8], acc.Address[:8], acc.TxCnt, acc.Balance, acc.isCreated, acc.isRoot)
+	return fmt.Sprintf("Hash: %x, Address: %x, TxCnt: %v, Balance: %v, isCreated: %v, isRoot: %v", addressHash[:8], acc.Address[:8], acc.TxCnt, acc.Balance, acc.IsCreated, acc.IsRoot)
 }

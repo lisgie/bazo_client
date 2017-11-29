@@ -16,9 +16,13 @@ func GetAccountEndpoint(w http.ResponseWriter, req *http.Request) {
 	copy(pubKey[:], pubKeyInt.Bytes())
 
 	acc, err := client.GetAccount(pubKey)
+
+	js, err := json.Marshal(acc)
 	if err != nil {
-		json.NewEncoder(w).Encode(err.Error())
-	} else {
-		json.NewEncoder(w).Encode(acc.String())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
 }
