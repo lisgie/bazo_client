@@ -9,11 +9,11 @@ import (
 
 type Account struct {
 	Address       [64]byte `json:"-"`
-	AddressString string   `json:"Address"`
-	Balance       uint64   `json:"Balance"`
-	TxCnt         uint32   `json:"TxCnt"`
-	IsCreated     bool     `json:"IsCreated"`
-	IsRoot        bool     `json:"IsRoot"`
+	AddressString string   `json:"address"`
+	Balance       uint64   `json:"balance"`
+	TxCnt         uint32   `json:"txCnt"`
+	IsCreated     bool     `json:"isCreated"`
+	IsRoot        bool     `json:"isRoot"`
 }
 
 func GetAccount(pubKey [64]byte) (*Account, error) {

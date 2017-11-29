@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	parameters     = miner.NewDefaultParameters()
+	parameters = miner.NewDefaultParameters()
 	//All blockheaders of the whole chain
 	allBockHeaders []*protocol.SPVHeader
 )

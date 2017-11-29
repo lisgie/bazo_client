@@ -67,5 +67,9 @@ func Process(args []string) {
 		return
 	}
 
-	SendTx(tx, msgType)
+	if err := SendTx(tx, msgType); err != nil {
+		logger.Printf("%v\n", err)
+	} else {
+		logger.Printf("Successfully sent the following tansaction:%v", tx)
+	}
 }

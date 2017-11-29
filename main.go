@@ -20,7 +20,7 @@ func main() {
 	} else {
 		fmt.Printf("%v\n", client.USAGE_MSG)
 
+		fmt.Printf("%v\n\n", "Starting REST...")
 		REST.Init()
-		fmt.Printf("%v\n\n", "REST INTERFACE STARTED")
 	}
 }
