@@ -29,7 +29,7 @@ func CreateFundsTxEndpoint(w http.ResponseWriter, req *http.Request) {
 	//TODO: Error logging
 	amount, _ := strconv.Atoi(params["amount"])
 	fee, _ := strconv.Atoi(params["fee"])
-	txCnt, _ := strconv.Atoi(params["txcnt"])
+	txCnt, _ := strconv.Atoi(params["txCnt"])
 
 	fromPubInt, _ := new(big.Int).SetString(params["fromPub"], 16)
 	copy(fromPub[:], fromPubInt.Bytes())

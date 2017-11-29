@@ -64,22 +64,5 @@ func Process(args []string) {
 		return
 	}
 
-	//Transaction creation successful
-	packet := p2p.BuildPacket(msgType, tx.Encode())
-
-	//Open a connection
-	conn := Connect(p2p.BOOTSTRAP_SERVER)
-	conn.Write(packet)
-
-	header, _, err := rcvData(conn)
-	if err != nil {
-		fmt.Printf("Could not send the following transaction: %x", tx.Hash())
-		return
-	}
-
-	if header != nil && header.TypeID == p2p.TX_BRDCST_ACK {
-		fmt.Printf("Successfully sent the following tansaction:%v", tx)
-	}
-
-	conn.Close()
+	SendTx(tx, msgType)
 }
