@@ -4,9 +4,16 @@ import (
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
+	"os"
+)
+
+var (
+	logger *log.Logger
 )
 
 func Init() {
+	logger = log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
+
 	router := mux.NewRouter()
 
 	getEndpoints(router)
@@ -16,5 +23,6 @@ func Init() {
 
 func getEndpoints(router *mux.Router) {
 	router.HandleFunc("/account/{id}", GetAccountEndpoint).Methods("GET")
-	router.HandleFunc("/fundsTx/{amount}/{fee}/{txCnt}/{fromPub}/{toPub}/{fromPriv}", CreateFundsTxEndpoint).Methods("GET")
+	router.HandleFunc("/createFundsTx/{amount}/{fee}/{txCnt}/{fromPub}/{toPub}/{fromPriv}", CreateFundsTxEndpoint).Methods("POST")
+	router.HandleFunc("/sendFundsTx/{signedTx}", SendFundsTxEndpoint).Methods("POST")
 }

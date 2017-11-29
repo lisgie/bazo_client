@@ -1,11 +1,10 @@
 package REST
 
 import (
-	"crypto/ecdsa"
-	"crypto/elliptic"
+	"encoding/hex"
+	"encoding/json"
 	"github.com/gorilla/mux"
 	"github.com/mchetelat/bazo_client/client"
-	"github.com/mchetelat/bazo_miner/p2p"
 	"github.com/mchetelat/bazo_miner/protocol"
 	"math/big"
 	"net/http"
@@ -26,7 +25,6 @@ func CreateFundsTxEndpoint(w http.ResponseWriter, req *http.Request) {
 	var fromPub [64]byte
 	var toPub [64]byte
 
-	//TODO: Error logging
 	amount, _ := strconv.Atoi(params["amount"])
 	fee, _ := strconv.Atoi(params["fee"])
 	txCnt, _ := strconv.Atoi(params["txCnt"])
@@ -37,33 +35,29 @@ func CreateFundsTxEndpoint(w http.ResponseWriter, req *http.Request) {
 	toPubInt, _ := new(big.Int).SetString(params["toPub"], 16)
 	copy(toPub[:], toPubInt.Bytes())
 
-	fromPubInt1 := new(big.Int)
-	fromPubInt1.SetBytes(fromPub[:32])
-	fromPubInt2 := new(big.Int)
-	fromPubInt2.SetBytes(fromPub[32:])
-
-	pubKey := ecdsa.PublicKey{
-		elliptic.P256(),
-		fromPubInt1,
-		fromPubInt2,
+	tx := protocol.FundsTx{
+		Header: 0,
+		Amount: uint64(amount),
+		Fee:    uint64(fee),
+		TxCnt:  uint32(txCnt),
+		From:   client.SerializeHashContent(fromPub),
+		To:     client.SerializeHashContent(toPub),
 	}
 
-	fromPrivInt, _ := new(big.Int).SetString(params["fromPriv"], 16)
+	txHash := tx.Hash()
 
-	fromPriv := ecdsa.PrivateKey{
-		pubKey,
-		fromPrivInt,
+	js, err := json.Marshal(hex.EncodeToString(txHash[:]))
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
-	tx, _ := protocol.ConstrFundsTx(
-		byte(0),
-		uint64(amount),
-		uint64(fee),
-		uint32(txCnt),
-		client.SerializeHashContent(fromPub[:]),
-		client.SerializeHashContent(toPub[:]),
-		&fromPriv,
-	)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
+}
 
-	client.SendTx(tx, p2p.FUNDSTX_BRDCST)
+func SendFundsTxEndpoint(w http.ResponseWriter, req *http.Request) {
+	params := mux.Vars(req)
+	signedTx := params["signedTx"]
 }
