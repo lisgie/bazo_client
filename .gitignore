@@ -4,3 +4,5 @@ log*
 *.db
 *.out
 *.txt
+*.key
+coverage.html
