@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	parameters     = miner.NewDefaultParameters()
+	parameters = miner.NewDefaultParameters()
 	//All blockheaders of the whole chain
 	allBockHeaders []*protocol.SPVHeader
 )
@@ -36,7 +36,7 @@ func getNewBlockHeaders(latest *protocol.SPVHeader, eldest *protocol.SPVHeader, 
 	return list
 }
 
-func isAccCreated(acc *Account) (bool, error) {
+func isAccreated(acc *Account) (bool, error) {
 	relevantBlocks, err := getRelevantBlocks(acc.Address)
 	if err != nil {
 		return false, err
@@ -55,7 +55,7 @@ func isAccCreated(acc *Account) (bool, error) {
 	return false, nil
 }
 
-func getBalance(acc *Account) (balance uint64, err error) {
+func getState(acc *Account) error {
 	pubKeyHash := SerializeHashContent(acc.Address)
 
 	//Get blocks if the Acc address:
@@ -67,22 +67,25 @@ func getBalance(acc *Account) (balance uint64, err error) {
 	//* nr of configTx in block is > 0 (in order to maintain params in light-client)
 	relevantBlocks, err := getRelevantBlocks(acc.Address)
 	if err != nil {
-		return balance, err
+		return err
 	}
 
 	for _, block := range relevantBlocks {
 		//Collect block reward
 		if block.Beneficiary == SerializeHashContent(acc.Address) {
-			balance += parameters.Block_reward
+			acc.Balance += parameters.Block_reward
 		}
 
 		//Check if Account was issued and collect fee
 		for _, txHash := range block.AccTxData {
 			tx := reqTx(p2p.ACCTX_REQ, txHash)
-			AccTx := tx.(*protocol.AccTx)
+			accTx := tx.(*protocol.AccTx)
+			if accTx.PubKey == acc.Address {
+				acc.IsCreated = true
+			}
 
 			if block.Beneficiary == pubKeyHash {
-				balance += AccTx.Fee
+				acc.Balance += accTx.Fee
 			}
 		}
 
@@ -93,7 +96,7 @@ func getBalance(acc *Account) (balance uint64, err error) {
 			configTxSlice := []*protocol.ConfigTx{configTx}
 
 			if block.Beneficiary == pubKeyHash {
-				balance += configTx.Fee
+				acc.Balance += configTx.Fee
 			}
 
 			miner.CheckAndChangeParameters(&parameters, &configTxSlice)
@@ -107,24 +110,24 @@ func getBalance(acc *Account) (balance uint64, err error) {
 
 			if fundsTx.From == pubKeyHash {
 				if !acc.IsRoot {
-					balance -= fundsTx.Amount
-					balance -= fundsTx.Fee
+					acc.Balance -= fundsTx.Amount
+					acc.Balance -= fundsTx.Fee
 				}
 
 				acc.TxCnt += 1
 			}
 
 			if fundsTx.To == pubKeyHash {
-				balance += fundsTx.Amount
+				acc.Balance += fundsTx.Amount
 			}
 
 			if block.Beneficiary == pubKeyHash {
-				balance += fundsTx.Fee
+				acc.Balance += fundsTx.Fee
 			}
 		}
 	}
 
-	return balance, nil
+	return nil
 }
 
 func getRelevantBlocks(pubKey [64]byte) (relevantBlocks []*protocol.Block, err error) {

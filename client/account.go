@@ -28,15 +28,15 @@ func GetAccount(pubKey [64]byte) (*Account, error) {
 	//If Acc is Root in the bazo network state, we do not check for accTx, else we check
 	if rootAcc := reqRootAccFromHash(SerializeHashContent(acc.Address)); rootAcc != nil {
 		acc.IsCreated, acc.IsRoot = true, true
-	} else {
-		if acc.IsCreated, _ = isAccCreated(&acc); acc.IsCreated == false {
-			return nil, errors.New(fmt.Sprintf("Account %x does not exist.\n", acc.Address[:8]))
-		}
 	}
 
-	acc.Balance, err = getBalance(&acc)
+	err = getState(&acc)
 	if err != nil {
-		return &acc, errors.New(fmt.Sprintf("Could not calculate account (%x) balance: %v\n", acc.Address[:8], err))
+		return &acc, errors.New(fmt.Sprintf("Could not calculate state of account %x: %v\n", acc.Address[:8], err))
+	}
+
+	if acc.IsCreated == false {
+		return nil, errors.New(fmt.Sprintf("Account %x does not exist.\n", acc.Address[:8]))
 	}
 
 	return &acc, nil

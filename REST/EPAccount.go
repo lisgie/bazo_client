@@ -16,13 +16,23 @@ func GetAccountEndpoint(w http.ResponseWriter, req *http.Request) {
 	copy(pubKey[:], pubKeyInt.Bytes())
 
 	acc, err := client.GetAccount(pubKey)
-
-	js, err := json.Marshal(acc)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+		js, err := json.Marshal(err.Error())
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(js)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(js)
+	} else {
+		js, err := json.Marshal(acc)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(js)
+	}
 }
