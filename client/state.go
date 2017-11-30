@@ -36,25 +36,6 @@ func getNewBlockHeaders(latest *protocol.SPVHeader, eldest *protocol.SPVHeader, 
 	return list
 }
 
-func isAccreated(acc *Account) (bool, error) {
-	relevantBlocks, err := getRelevantBlocks(acc.Address)
-	if err != nil {
-		return false, err
-	}
-
-	for _, block := range relevantBlocks {
-		for _, txHash := range block.AccTxData {
-			tx := reqTx(p2p.ACCTX_REQ, txHash)
-			AccTx := tx.(*protocol.AccTx)
-			if AccTx.PubKey == acc.Address {
-				return true, nil
-			}
-		}
-	}
-
-	return false, nil
-}
-
 func getState(acc *Account) error {
 	pubKeyHash := SerializeHashContent(acc.Address)
 
